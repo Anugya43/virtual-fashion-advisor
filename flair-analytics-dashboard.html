@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLAIR — Style Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    Flair<span class="logo-dot">.</span>
+    <span class="logo-sub">Style Intelligence</span>
+  </div>
+  <div class="header-controls">
+    <input class="user-input" id="userIdInput" type="text"
+           placeholder="Paste user UUID…" autocomplete="off">
+    <button class="btn-demo" id="btnDemo">Demo data</button>
+    <button class="btn-load" id="btnLoad">Analyse →</button>
+  </div>
+</header>
+
+<!-- TOKEN ROW -->
+<div class="auth-row">
+  <span class="auth-label">Auth Token</span>
+  <input class="token-input" id="tokenInput" type="text"
+         placeholder="Bearer token (from /api/auth/login) — leave blank for demo">
+</div>
+
+<!-- STATE BAR -->
+<div class="state-bar" id="stateBar">
+  <div class="spinner" id="stateSpinner"></div>
+  <span id="stateMsg">Loading…</span>
+</div>
+
+<!-- DASHBOARD GRID (populated by JS) -->
+<div class="dashboard" id="dashboard"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════════ */
+const API_BASE = 'http://localhost:3001/api';
+
+Chart.defaults.color          = 'rgba(232,228,220,.45)';
+Chart.defaults.font.family    = "'Syne', sans-serif";
+Chart.defaults.font.size      = 11;
+Chart.defaults.borderColor    = 'rgba(255,255,255,.06)';
+
+const PALETTE = ['#c8a97e','#8a9e8c','#b87d7d','#7d9ab8','#b8a07d',
+                 '#9d7db8','#7db8b0','#b8b07d','#a07d9d','#7d8ab8'];
+
+/* ─── DEMO DATA ─────────────────────────────────────────────── */
+const DEMO = {
+  user_id: 'demo-user',
+  swipe_stats: {
+    total_swipes: 84, likes: 51, dislikes: 27, skips: 6,
+    like_rate_pct: 65.4, active_days: 7,
+    first_swipe: new Date(Date.now() - 7*86400000).toISOString(),
+    last_swipe:  new Date().toISOString(),
+  },
+  top_categories: [
+    { category:'Dress',      likes:18, dislikes:3,  like_rate_pct:85.7 },
+    { category:'Topwear',    likes:12, dislikes:5,  like_rate_pct:70.6 },
+    { category:'Bottomwear', likes:9,  dislikes:6,  like_rate_pct:60.0 },
+    { category:'Outerwear',  likes:6,  dislikes:4,  like_rate_pct:60.0 },
+    { category:'Co-ord Set', likes:4,  dislikes:2,  like_rate_pct:66.7 },
+    { category:'Accessory',  likes:2,  dislikes:7,  like_rate_pct:22.2 },
+  ],
+  color_preferences: [
+    { color_family:'Neutral', likes:16, dislikes:2,  sentiment:'preferred', like_rate_pct:88.9 },
+    { color_family:'Blue',    likes:12, dislikes:3,  sentiment:'preferred', like_rate_pct:80.0 },
+    { color_family:'Green',   likes:8,  dislikes:2,  sentiment:'preferred', like_rate_pct:80.0 },
+    { color_family:'Pink',    likes:6,  dislikes:4,  sentiment:'preferred', like_rate_pct:60.0 },
+    { color_family:'Brown',   likes:5,  dislikes:3,  sentiment:'preferred', like_rate_pct:62.5 },
+    { color_family:'Black',   likes:2,  dislikes:9,  sentiment:'avoided',   like_rate_pct:18.2 },
+    { color_family:'Red',     likes:1,  dislikes:4,  sentiment:'avoided',   like_rate_pct:20.0 },
+  ],
+  style_distribution: [
+    { style:'minimalist', likes:20, like_rate_pct:88 },
+    { style:'casual',     likes:16, like_rate_pct:76 },
+    { style:'romantic',   likes:9,  like_rate_pct:69 },
+    { style:'classic',    likes:4,  like_rate_pct:57 },
+    { style:'edgy',       likes:2,  like_rate_pct:28 },
+  ],
+  occasion_affinity: [
+    { occasion:'Casual',       likes:22, like_rate_pct:82 },
+    { occasion:'Smart Casual', likes:15, like_rate_pct:75 },
+    { occasion:'Party',        likes:8,  like_rate_pct:61 },
+    { occasion:'Formal',       likes:4,  like_rate_pct:40 },
+    { occasion:'Sports',       likes:2,  like_rate_pct:25 },
+  ],
+  activity_timeline: Array.from({ length: 14 }, (_, i) => ({
+    day: new Date(Date.now() - (13-i)*86400000).toISOString().slice(0,10),
+    swipes: Math.round(2 + Math.random()*14),
+    likes:  Math.round(1 + Math.random()*8),
+    dislikes: Math.round(Math.random()*5),
+  })),
+  quiz: { computed_archetype: 'minimalist', style_scores: { minimalist:.52, casual:.24, romantic:.14, classic:.07, edgy:.03 } },
+  saved: { total_saved: 12, collections: 3, collection_names: ['Saved','Work','Occasions'] },
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   LOAD + RENDER
+   ═══════════════════════════════════════════════════════════════ */
+let activeCharts = [];
+
+async function loadData(userId, token) {
+  showState('loading', 'Fetching your style data…');
+  try {
+    const res = await fetch(`${API_BASE}/analytics/${userId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    hideState();
+    return json.data;
+  } catch (e) {
+    showState('error', `Error: ${e.message}`);
+    return null;
+  }
+}
+
+function showState(type, msg) {
+  const bar = document.getElementById('stateBar');
+  bar.className = `state-bar ${type}`;
+  document.getElementById('stateMsg').textContent = msg;
+  document.getElementById('stateSpinner').style.display = type === 'loading' ? 'block' : 'none';
+}
+function hideState() {
+  document.getElementById('stateBar').style.display = 'none';
+}
+
+async function run(data) {
+  // Destroy previous charts
+  activeCharts.forEach(c => c.destroy());
+  activeCharts = [];
+
+  const dash = document.getElementById('dashboard');
+  dash.innerHTML = '';
+
+  // Build all sections
+  renderStatStrip(data);
+  renderArchetype(data);
+
+  renderSection('Preference Analysis');
+  renderCategoryPie(data);
+  renderColorBar(data);
+
+  renderSection('Behaviour & Activity');
+  renderActivityLine(data);
+  renderOccasionGrid(data);
+
+  // Stagger reveal animations
+  requestAnimationFrame(() => {
+    const els = dash.querySelectorAll('.stat-card, .chart-card, .archetype-card');
+    els.forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 60);
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT STRIP
+   ═══════════════════════════════════════════════════════════════ */
+function renderStatStrip(data) {
+  const s = data.swipe_stats;
+  const strip = el('div', 'stat-strip');
+
+  strip.append(
+    statCard('Total Swipes', fmt(s.total_swipes), 'Outfits reviewed', ''),
+    statCard('Liked',        fmt(s.likes),         `${s.like_rate_pct}% like rate`, 'like-color'),
+    statCard('Passed',       fmt(s.dislikes),       'Not your style',  'dis-color'),
+    statCard('Active Days',  fmt(s.active_days),    'Days with swipes', 'acc-color'),
+  );
+  document.getElementById('dashboard').append(strip);
+}
+
+function statCard(label, value, meta, colorClass) {
+  const card = el('div', 'stat-card');
+  card.innerHTML = `
+    <div class="stat-label">${label}</div>
+    <div class="stat-value ${colorClass}">${value}</div>
+    <div class="stat-meta">${meta}</div>
+  `;
+  return card;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ARCHETYPE CARD
+   ═══════════════════════════════════════════════════════════════ */
+function renderArchetype(data) {
+  const card = el('div', 'archetype-card col-span');
+  const arch  = data.quiz?.computed_archetype || 'Discovering…';
+  const scores = data.quiz?.style_scores || {};
+  const sorted = Object.entries(scores).sort(([,a],[,b]) => b - a).slice(0,5);
+  const descriptions = {
+    minimalist: 'Less is more. Clean lines, quiet luxury.',
+    casual:     'Effortlessly put-together, every day.',
+    romantic:   'Soft silhouettes, feminine details.',
+    formal:     'Polished, precise, commanding.',
+    bohemian:   'Free-spirited, layered, earthy.',
+    classic:    'Timeless pieces that never fade.',
+    streetwear: 'Urban edge, cultural currency.',
+    sporty:     'Function meets bold aesthetic.',
+    edgy:       'Contrast, tension, unapologetic.',
+    preppy:     'Refined casual with collegiate roots.',
+  };
+
+  card.innerHTML = `
+    <div>
+      <div class="archetype-label">Style Archetype</div>
+      <div class="archetype-name">${arch}<span class="archetype-name-italic">${descriptions[arch] || 'Your unique style signature.'}</span></div>
+    </div>
+    <div class="style-bar-list">
+      ${sorted.map(([style, pct]) => `
+        <div class="style-bar-row">
+          <div class="style-bar-label">${style}</div>
+          <div class="style-bar-track">
+            <div class="style-bar-fill" data-pct="${pct}"></div>
+          </div>
+          <div class="style-bar-pct">${Math.round(pct*100)}%</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  document.getElementById('dashboard').append(card);
+
+  // Animate bars after insert
+  setTimeout(() => {
+    card.querySelectorAll('.style-bar-fill').forEach(bar => {
+      bar.style.transform = `scaleX(${bar.dataset.pct})`;
+    });
+  }, 300);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION DIVIDER
+   ═══════════════════════════════════════════════════════════════ */
+function renderSection(label) {
+  const rule = el('div', 'section-rule col-span');
+  rule.innerHTML = `
+    <div class="section-rule-line"></div>
+    <div class="section-rule-label">${label}</div>
+    <div class="section-rule-line"></div>
+  `;
+  document.getElementById('dashboard').append(rule);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHART 1 — CATEGORY PIE
+   ═══════════════════════════════════════════════════════════════ */
+function renderCategoryPie(data) {
+  const card = chartCard('Category Preferences', 'What styles you gravitate to', 'Pie');
+  const categories = (data.top_categories || []).slice(0, 8);
+
+  if (!categories.length) { showEmpty(card.querySelector('.chart-wrap')); return addCard(card); }
+
+  const labels = categories.map(c => c.category);
+  const values = categories.map(c => c.likes);
+  const total  = values.reduce((a,b) => a+b, 0);
+
+  // Left: chart canvas
+  const layout = el('div', 'pie-layout');
+  layout.style.height = '100%';
+
+  const canvasWrap = el('div', '');
+  canvasWrap.style.cssText = 'position:relative;height:220px;';
+  const canvas = document.createElement('canvas');
+  canvasWrap.append(canvas);
+
+  // Right: custom legend
+  const legend = el('div', 'legend-list');
+  labels.forEach((lbl, i) => {
+    const pct  = total ? Math.round(values[i] / total * 100) : 0;
+    const item = el('div', 'legend-item');
+    item.innerHTML = `
+      <div class="legend-dot" style="background:${PALETTE[i % PALETTE.length]}"></div>
+      <span class="legend-name">${lbl}</span>
+      <span class="legend-pct">${pct}%</span>
+    `;
+    legend.append(item);
+  });
+
+  layout.append(canvasWrap, legend);
+  card.querySelector('.chart-wrap').append(layout);
+  addCard(card);
+
+  const chart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: PALETTE.slice(0, labels.length),
+        borderColor: '#111010',
+        borderWidth: 3,
+        hoverBorderWidth: 3,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#191817',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          titleColor: '#e8e4dc',
+          bodyColor: 'rgba(232,228,220,.6)',
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed} likes  (${Math.round(ctx.parsed/total*100)}%)`,
+          },
+        },
+      },
+      animation: { animateRotate: true, duration: 900 },
+    }
+  });
+  activeCharts.push(chart);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHART 2 — COLOR HORIZONTAL BAR
+   ═══════════════════════════════════════════════════════════════ */
+const COLOR_HEX = {
+  Neutral:'#c8b99a', Blue:'#7d9ab8', Pink:'#d4a0a0', Green:'#8a9e8c',
+  Brown:'#a0785a', Black:'#555', Red:'#c46a6a', White:'#d4d0c8',
+  Orange:'#d4845a', Purple:'#9d7db8', Yellow:'#d4c060', Grey:'#8a8a8a',
+};
+
+function renderColorBar(data) {
+  const card = chartCard('Color Preferences', 'Palette affinities from your swipes', 'Bar');
+  const colors = (data.color_preferences || []).slice(0, 8);
+
+  if (!colors.length) { showEmpty(card.querySelector('.chart-wrap')); return addCard(card); }
+
+  const canvas = document.createElement('canvas');
+  card.querySelector('.chart-wrap').append(canvas);
+  addCard(card);
+
+  const labels    = colors.map(c => c.color_family);
+  const likeData  = colors.map(c => c.likes);
+  const disData   = colors.map(c => c.dislikes);
+  const barColors = labels.map(l => COLOR_HEX[l] || '#c8a97e');
+
+  const chart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Liked',
+          data: likeData,
+          backgroundColor: barColors.map(c => c + 'cc'),
+          borderColor: barColors,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Passed',
+          data: disData,
+          backgroundColor: 'rgba(196,106,106,.25)',
+          borderColor: 'rgba(196,106,106,.55)',
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      scales: {
+        x: {
+          stacked: false,
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'rgba(232,228,220,.35)', stepSize: 1 },
+          border: { color: 'transparent' },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: 'rgba(232,228,220,.5)', font: { size: 11 } },
+          border: { color: 'transparent' },
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: 'rgba(232,228,220,.4)',
+            padding: 16,
+            boxWidth: 10,
+            boxHeight: 10,
+            borderRadius: 3,
+            useBorderRadius: true,
+            font: { size: 11 },
+          }
+        },
+        tooltip: {
+          backgroundColor: '#191817',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            title: items => items[0].label,
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}`,
+          },
+        },
+      },
+      animation: { duration: 900, easing: 'easeOutQuart' },
+    }
+  });
+  activeCharts.push(chart);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHART 3 — ACTIVITY LINE
+   ═══════════════════════════════════════════════════════════════ */
+function renderActivityLine(data) {
+  const card = chartCard('Swipe Activity', '14-day engagement timeline', 'Line');
+  card.className += ' col-span';
+  const timeline = (data.activity_timeline || []).slice(-14);
+
+  if (!timeline.length) { showEmpty(card.querySelector('.chart-wrap')); return addCard(card); }
+
+  const canvas = document.createElement('canvas');
+  card.querySelector('.chart-wrap').append(canvas);
+  addCard(card);
+
+  const labels   = timeline.map(d => {
+    const dt = new Date(d.day);
+    return dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  });
+  const swipes   = timeline.map(d => d.swipes   || 0);
+  const likes    = timeline.map(d => d.likes    || 0);
+  const dislikes = timeline.map(d => d.dislikes || 0);
+
+  const grad = (canvas, color) => {
+    const g = canvas.getContext('2d').createLinearGradient(0,0,0,300);
+    g.addColorStop(0,  color + '55');
+    g.addColorStop(1,  color + '00');
+    return g;
+  };
+
+  const chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total Swipes',
+          data: swipes,
+          borderColor: '#c8a97e',
+          backgroundColor: ctx => grad(ctx.chart.canvas, '#c8a97e'),
+          borderWidth: 2,
+          tension: .4,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#c8a97e',
+          pointBorderColor: '#111010',
+          pointBorderWidth: 2,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Liked',
+          data: likes,
+          borderColor: '#6ab187',
+          backgroundColor: ctx => grad(ctx.chart.canvas, '#6ab187'),
+          borderWidth: 1.5,
+          tension: .4,
+          fill: false,
+          pointRadius: 3,
+          pointBackgroundColor: '#6ab187',
+          pointBorderColor: '#111010',
+          pointBorderWidth: 2,
+          pointHoverRadius: 5,
+          borderDash: [],
+        },
+        {
+          label: 'Passed',
+          data: dislikes,
+          borderColor: '#c46a6a',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          tension: .4,
+          fill: false,
+          pointRadius: 3,
+          pointBackgroundColor: '#c46a6a',
+          pointBorderColor: '#111010',
+          pointBorderWidth: 2,
+          pointHoverRadius: 5,
+          borderDash: [4, 4],
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'rgba(232,228,220,.38)', maxRotation: 0, font:{size:10} },
+          border: { color: 'transparent' },
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'rgba(232,228,220,.35)', stepSize: 2 },
+          border: { color: 'transparent' },
+          beginAtZero: true,
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: 'rgba(232,228,220,.4)',
+            padding: 20,
+            boxWidth: 24,
+            boxHeight: 2,
+            font: { size: 11 },
+          }
+        },
+        tooltip: {
+          backgroundColor: '#191817',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          padding: 14,
+          titleColor: 'rgba(232,228,220,.6)',
+          bodyColor: '#e8e4dc',
+          bodySpacing: 5,
+        },
+      },
+      animation: { duration: 1000, easing: 'easeOutQuart' },
+    }
+  });
+  activeCharts.push(chart);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OCCASION GRID (non-chart visual)
+   ═══════════════════════════════════════════════════════════════ */
+function renderOccasionGrid(data) {
+  const card = chartCard('Occasion Affinity', 'Where you want to look great', '');
+  delete card.querySelector('.chart-badge').textContent;
+  card.querySelector('.chart-badge').remove();
+
+  const occasions = (data.occasion_affinity || []).slice(0,6);
+  const wrap = card.querySelector('.chart-wrap');
+  wrap.style.minHeight = 'auto';
+
+  const grid = el('div', 'occasion-grid');
+  const icons = { Casual:'☀️', 'Smart Casual':'✦', Party:'✦', Formal:'♦', Sports:'◈', Travel:'◎' };
+
+  occasions.forEach(o => {
+    const tile = el('div', 'occasion-tile');
+    tile.innerHTML = `
+      <div class="occasion-tile-name">${o.occasion}</div>
+      <div class="occasion-tile-val">${o.likes}</div>
+      <div class="occasion-tile-sub">${o.like_rate_pct}% liked</div>
+    `;
+    grid.append(tile);
+  });
+
+  wrap.append(grid);
+  addCard(card);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+function chartCard(title, subtitle, badge) {
+  const card = el('div', 'chart-card');
+  card.innerHTML = `
+    <div class="chart-header">
+      <div class="chart-title-block">
+        <div class="chart-title">${title}</div>
+        <div class="chart-subtitle">${subtitle}</div>
+      </div>
+      ${badge ? `<div class="chart-badge">${badge}</div>` : ''}
+    </div>
+    <div class="chart-wrap"></div>
+  `;
+  return card;
+}
+
+function addCard(card) {
+  document.getElementById('dashboard').append(card);
+}
+
+function showEmpty(wrap) {
+  const emp = el('div', 'chart-empty');
+  emp.innerHTML = `
+    <div class="chart-empty-icon">◌</div>
+    <div class="chart-empty-text">No data yet</div>
+  `;
+  wrap.style.position = 'relative';
+  wrap.append(emp);
+}
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EVENTS
+   ═══════════════════════════════════════════════════════════════ */
+document.getElementById('btnLoad').addEventListener('click', async () => {
+  const userId = document.getElementById('userIdInput').value.trim();
+  const token  = document.getElementById('tokenInput').value.trim();
+  if (!userId) { showState('error', 'Enter a user ID first.'); return; }
+
+  document.getElementById('btnLoad').disabled = true;
+  const data = await loadData(userId, token);
+  document.getElementById('btnLoad').disabled = false;
+  if (data) run(data);
+});
+
+document.getElementById('btnDemo').addEventListener('click', () => {
+  hideState();
+  run(DEMO);
+});
+
+document.getElementById('userIdInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnLoad').click();
+});
+
+// Auto-load demo on first paint
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => run(DEMO), 200);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLAIR — Fashion Advisor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="swipe.css">   
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-logo" onclick="showPage('home')">VOGUE<span>·AI</span></div>
+  <div class="nav-links" id="navLinks">
+    <a onclick="showPage('home')" class="active" id="nav-home">Home</a>
+    <a onclick="showPage('news')" id="nav-news">Fashion News</a>
+    <a onclick="showPage('profile')" id="nav-profile">My Style</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-theme" id="themeToggle" title="Toggle dark mode">🌙</button>
+  </div>
+</nav>
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- KEYBOARD HINT -->
+<div class="keyboard-hint">← dislike &nbsp;&nbsp; like →</div>
+
+<!-- MAIN APP -->
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<main>
+  <div class="hint" id="swipeHint">Swipe or tap to tell us your taste</div>
+
+  <!-- CARD STACK -->
+  <div class="card-stack" id="cardStack">
+    <div class="card-ghost"></div>
+    <div class="card-ghost"></div>
+    <!-- Active card injected by JS -->
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">✦</div>
+    <div class="empty-title">You've seen it all</div>
+    <div class="empty-sub">Check your recommendations or load fresh outfits</div>
+    <button class="btn-reload" id="btnReload">Load more outfits</button>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div class="actions" id="actionButtons" style="display: none;">
+    <!-- Dislike -->
+    <button class="btn-action btn-dislike" id="btnDislike" title="Dislike (←)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <!-- Skip -->
+    <button class="btn-action btn-skip" id="btnSkip" title="Skip (↓)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <polyline points="5 12 19 12"/><polyline points="14 7 19 12 14 17"/>
+      </svg>
+    </button>
+    <!-- Like -->
+    <button class="btn-action btn-like" id="btnLike" title="Like (→)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+  </div>
+</main>
+
+<footer id="pageFooter" style="display: none;">
+  <div class="stat">
+    <div class="stat-val like-val" id="statLikes">0</div>
+    <div class="stat-lbl">Liked</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="statSeen">0</div>
+    <div class="stat-lbl">Seen</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val dis-val" id="statDislikes">0</div>
+    <div class="stat-lbl">Passed</div>
+  </div>
+</footer>
+<script src="swipe.js"></script>
+</body>
+</html>
