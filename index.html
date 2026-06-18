@@ -51,6 +51,12 @@
     font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
     color: var(--rose-dark); letter-spacing: 0.08em; text-align: center; margin-bottom: 0.25rem;
   }
+ .guest-btn{
+    width:auto;
+    padding:12px 24px;
+    margin:0 auto;
+    display:block;
+}
   .auth-logo span { color: var(--gold); }
   .auth-tagline { font-size: 0.78rem; color: var(--muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
   .auth-tabs { display: flex; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--sand); margin-bottom: 1.75rem; }
@@ -437,6 +443,13 @@
       <div class="auth-err" id="suErr"></div>
       <button class="auth-btn" onclick="handleSignUp()">Create Account →</button>
     </div>
+   <div class="auth-divider">
+  <span>or</span>
+</div>
+
+<button class="auth-btn guest-btn" onclick="continueAsGuest()">
+  Continue as Guest →
+</button>
   </div>
 </div>
 
@@ -665,6 +678,14 @@ function loginUser(user) {
   document.getElementById('authOverlay').classList.add('hidden');
   applyUserToUI();
   showToast(`Welcome back, ${user.name.split(' ')[0]}! ✨`);
+}
+ function continueAsGuest() {
+    localStorage.setItem("guestMode", "true");
+
+    document.getElementById("authOverlay").style.display = "none";
+
+    // Optional welcome message
+    console.log("Guest Mode Enabled");
 }
 
 function handleSignOut() {
