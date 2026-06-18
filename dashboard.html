@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FLAIR — Style Intelligence</title>
+<title> Vogue.ai</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -12,26 +12,19 @@
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-  <div class="logo">
-    Flair<span class="logo-dot">.</span>
-    <span class="logo-sub">Style Intelligence</span>
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo" onclick="window.location.href='/'">VOGUE<span>·AI</span></div>
+  <div class="nav-links" id="navLinks">
+    <a href="/index.html">Home</a>
+    <a href="/index.html">My Style</a>
+    <a class="active">Analytics</a>
   </div>
-  <div class="header-controls">
-    <input class="user-input" id="userIdInput" type="text"
-           placeholder="Paste user UUID…" autocomplete="off">
-    <button class="btn-demo" id="btnDemo">Demo data</button>
-    <button class="btn-load" id="btnLoad">Analyse →</button>
+  <div class="nav-actions">
+    <button class="btn-theme" id="themeToggle" title="Toggle dark mode">🌙</button>
+    <button class="nav-toggle" id="navToggle">☰</button>
   </div>
-</header>
-
-<!-- TOKEN ROW -->
-<div class="auth-row">
-  <span class="auth-label">Auth Token</span>
-  <input class="token-input" id="tokenInput" type="text"
-         placeholder="Bearer token (from /api/auth/login) — leave blank for demo">
-</div>
+</nav>
 
 <!-- STATE BAR -->
 <div class="state-bar" id="stateBar">
@@ -46,85 +39,89 @@
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 Chart.defaults.color          = 'rgba(232,228,220,.45)';
 Chart.defaults.font.family    = "'Syne', sans-serif";
 Chart.defaults.font.size      = 11;
 Chart.defaults.borderColor    = 'rgba(255,255,255,.06)';
 
+const state = { theme: 'dark' };
 const PALETTE = ['#c8a97e','#8a9e8c','#b87d7d','#7d9ab8','#b8a07d',
                  '#9d7db8','#7db8b0','#b8b07d','#a07d9d','#7d8ab8'];
 
-/* ─── DEMO DATA ─────────────────────────────────────────────── */
-const DEMO = {
-  user_id: 'demo-user',
-  swipe_stats: {
-    total_swipes: 84, likes: 51, dislikes: 27, skips: 6,
-    like_rate_pct: 65.4, active_days: 7,
-    first_swipe: new Date(Date.now() - 7*86400000).toISOString(),
-    last_swipe:  new Date().toISOString(),
-  },
-  top_categories: [
-    { category:'Dress',      likes:18, dislikes:3,  like_rate_pct:85.7 },
-    { category:'Topwear',    likes:12, dislikes:5,  like_rate_pct:70.6 },
-    { category:'Bottomwear', likes:9,  dislikes:6,  like_rate_pct:60.0 },
-    { category:'Outerwear',  likes:6,  dislikes:4,  like_rate_pct:60.0 },
-    { category:'Co-ord Set', likes:4,  dislikes:2,  like_rate_pct:66.7 },
-    { category:'Accessory',  likes:2,  dislikes:7,  like_rate_pct:22.2 },
-  ],
-  color_preferences: [
-    { color_family:'Neutral', likes:16, dislikes:2,  sentiment:'preferred', like_rate_pct:88.9 },
-    { color_family:'Blue',    likes:12, dislikes:3,  sentiment:'preferred', like_rate_pct:80.0 },
-    { color_family:'Green',   likes:8,  dislikes:2,  sentiment:'preferred', like_rate_pct:80.0 },
-    { color_family:'Pink',    likes:6,  dislikes:4,  sentiment:'preferred', like_rate_pct:60.0 },
-    { color_family:'Brown',   likes:5,  dislikes:3,  sentiment:'preferred', like_rate_pct:62.5 },
-    { color_family:'Black',   likes:2,  dislikes:9,  sentiment:'avoided',   like_rate_pct:18.2 },
-    { color_family:'Red',     likes:1,  dislikes:4,  sentiment:'avoided',   like_rate_pct:20.0 },
-  ],
-  style_distribution: [
-    { style:'minimalist', likes:20, like_rate_pct:88 },
-    { style:'casual',     likes:16, like_rate_pct:76 },
-    { style:'romantic',   likes:9,  like_rate_pct:69 },
-    { style:'classic',    likes:4,  like_rate_pct:57 },
-    { style:'edgy',       likes:2,  like_rate_pct:28 },
-  ],
-  occasion_affinity: [
-    { occasion:'Casual',       likes:22, like_rate_pct:82 },
-    { occasion:'Smart Casual', likes:15, like_rate_pct:75 },
-    { occasion:'Party',        likes:8,  like_rate_pct:61 },
-    { occasion:'Formal',       likes:4,  like_rate_pct:40 },
-    { occasion:'Sports',       likes:2,  like_rate_pct:25 },
-  ],
-  activity_timeline: Array.from({ length: 14 }, (_, i) => ({
-    day: new Date(Date.now() - (13-i)*86400000).toISOString().slice(0,10),
-    swipes: Math.round(2 + Math.random()*14),
-    likes:  Math.round(1 + Math.random()*8),
-    dislikes: Math.round(Math.random()*5),
-  })),
-  quiz: { computed_archetype: 'minimalist', style_scores: { minimalist:.52, casual:.24, romantic:.14, classic:.07, edgy:.03 } },
-  saved: { total_saved: 12, collections: 3, collection_names: ['Saved','Work','Occasions'] },
-};
+function toggleTheme() {
+  state.theme = state.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.getElementById('themeToggle').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('vf_theme', state.theme);
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('vf_theme') || 'dark';
+  state.theme = savedTheme;
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    themeBtn.addEventListener('click', toggleTheme);
+  }
+}
+
+function initNav() {
+  const toggle = document.getElementById('navToggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+  }
+}
+
+function getLocalQuizData() {
+  try {
+    return JSON.parse(localStorage.getItem('vf_results') || 'null');
+  } catch (err) {
+    return null;
+  }
+}
+
+function getLocalUser() {
+  try {
+    return JSON.parse(localStorage.getItem('vf_user') || 'null');
+  } catch (err) {
+    return null;
+  }
+}
+
+function mergeQuizData(data) {
+  const localQuiz = getLocalQuizData();
+  if (localQuiz) {
+    data.quiz = localQuiz;
+  }
+  return data;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    LOAD + RENDER
    ═══════════════════════════════════════════════════════════════ */
 let activeCharts = [];
 
-async function loadData(userId, token) {
+async function loadData(userId) {
   showState('loading', 'Fetching your style data…');
+  console.log('[DEBUG] loadData called with userId:', userId);
+  console.log('[DEBUG] API URL:', `${API_BASE}/analytics/${userId}`);
   try {
-    const res = await fetch(`${API_BASE}/analytics/${userId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
+    const res = await fetch(`${API_BASE}/analytics/${userId}`);
+    console.log('[DEBUG] Response status:', res.status);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     const json = await res.json();
     hideState();
-    return json.data;
+    return mergeQuizData(json.data);
   } catch (e) {
+    console.error('[DEBUG] Error:', e);
     showState('error', `Error: ${e.message}`);
     return null;
   }
@@ -158,6 +155,7 @@ async function run(data) {
 
   renderSection('Behaviour & Activity');
   renderActivityLine(data);
+  renderOccasionAffinityChart(data);
   renderOccasionGrid(data);
 
   // Stagger reveal animations
@@ -559,10 +557,92 @@ function renderActivityLine(data) {
 /* ═══════════════════════════════════════════════════════════════
    OCCASION GRID (non-chart visual)
    ═══════════════════════════════════════════════════════════════ */
+function renderOccasionAffinityChart(data) {
+  const card = chartCard('Occasion Likes vs Dislikes', 'Swipe performance for each occasion', 'Bar');
+  const affinities = (data.occasion_affinity || []).slice(0, 8);
+
+  if (!affinities.length) { showEmpty(card.querySelector('.chart-wrap')); return addCard(card); }
+
+  const canvas = document.createElement('canvas');
+  card.querySelector('.chart-wrap').append(canvas);
+  addCard(card);
+
+  const labels = affinities.map(o => o.occasion);
+  const likeData = affinities.map(o => o.likes);
+  const dislikeData = affinities.map(o => o.dislikes);
+
+  const chart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Liked',
+          data: likeData,
+          backgroundColor: 'rgba(122, 194, 149, 0.9)',
+          borderColor: '#7db87a',
+          borderWidth: 1,
+          borderRadius: 6,
+          maxBarThickness: 32,
+        },
+        {
+          label: 'Disliked',
+          data: dislikeData,
+          backgroundColor: 'rgba(196, 106, 106, 0.85)',
+          borderColor: '#c46a6a',
+          borderWidth: 1,
+          borderRadius: 6,
+          maxBarThickness: 32,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'x',
+      scales: {
+        x: {
+          stacked: false,
+          grid: { display: false },
+          ticks: { color: 'rgba(232,228,220,.38)', font: { size: 11 } },
+          border: { color: 'transparent' },
+        },
+        y: {
+          stacked: false,
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'rgba(232,228,220,.35)', stepSize: 1 },
+          border: { color: 'transparent' },
+          beginAtZero: true,
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: 'rgba(232,228,220,.65)', boxWidth: 12, boxHeight: 12, padding: 14 }
+        },
+        tooltip: {
+          backgroundColor: '#191817',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
+          },
+        },
+      },
+      animation: { duration: 900, easing: 'easeOutQuart' },
+    }
+  });
+  activeCharts.push(chart);
+}
+
 function renderOccasionGrid(data) {
   const card = chartCard('Occasion Affinity', 'Where you want to look great', '');
-  delete card.querySelector('.chart-badge').textContent;
-  card.querySelector('.chart-badge').remove();
+  const badge = card.querySelector('.chart-badge');
+  if (badge) {
+    badge.remove();
+  }
 
   const occasions = (data.occasion_affinity || []).slice(0,6);
   const wrap = card.querySelector('.chart-wrap');
@@ -631,29 +711,38 @@ function fmt(n) {
 /* ═══════════════════════════════════════════════════════════════
    EVENTS
    ═══════════════════════════════════════════════════════════════ */
-document.getElementById('btnLoad').addEventListener('click', async () => {
-  const userId = document.getElementById('userIdInput').value.trim();
-  const token  = document.getElementById('tokenInput').value.trim();
-  if (!userId) { showState('error', 'Enter a user ID first.'); return; }
+window.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
+  initNav();
 
-  document.getElementById('btnLoad').disabled = true;
-  const data = await loadData(userId, token);
-  document.getElementById('btnLoad').disabled = false;
-  if (data) run(data);
-});
+  const params = new URLSearchParams(window.location.search);
+  const queryUserId = params.get('userId');
+  const localUser = getLocalUser();
+  console.log('[DEBUG] DOMContentLoaded - queryUserId:', queryUserId);
+  console.log('[DEBUG] DOMContentLoaded - localUser:', localUser);
 
-document.getElementById('btnDemo').addEventListener('click', () => {
-  hideState();
-  run(DEMO);
-});
+  if (queryUserId) {
+    console.log('[DEBUG] Using queryUserId:', queryUserId);
+    const data = await loadData(queryUserId);
+    if (data) {
+      run(data);
+      return;
+    }
+    return;
+  }
 
-document.getElementById('userIdInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btnLoad').click();
-});
+  if (localUser?.id) {
+    console.log('[DEBUG] Using localUser.id:', localUser.id);
+    const data = await loadData(localUser.id);
+    if (data) {
+      run(data);
+      return;
+    }
+    return;
+  }
 
-// Auto-load demo on first paint
-window.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => run(DEMO), 200);
+  console.log('[DEBUG] No userId found - showing error');
+  showState('error', 'No signed-in user found. Open the analytics dashboard from your profile page after login.');
 });
 </script>
 </body>

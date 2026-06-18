@@ -7,9 +7,438 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="index.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --rose: #c9627a; --rose-light: #f5d9e1; --rose-dark: #8b3a4d;
+    --sand: #e8ddd0; --sand-light: #f7f3ef; --sand-dark: #b5a898;
+    --charcoal: #1a1a1f; --charcoal-mid: #2d2d35; --ink: #3d3d45; --muted: #7a7a85;
+    --gold: #c9a86c; --gold-light: #f0e4ce; --white: #ffffff;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-xl: 32px;
+    --shadow-sm: 0 2px 8px rgba(26,26,31,0.08);
+    --shadow-md: 0 6px 24px rgba(26,26,31,0.12);
+    --shadow-lg: 0 16px 48px rgba(26,26,31,0.16);
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  [data-theme="dark"] {
+    --sand-light: #1e1e25; --sand: #2a2a34; --sand-dark: #3a3a48;
+    --charcoal: #f0ede8; --charcoal-mid: #e0dcd6; --ink: #b8b4ae; --muted: #7a7680;
+    --white: #141418; --rose-light: #3a1a22; --gold-light: #2a2010;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-body); background: var(--sand-light); color: var(--charcoal); line-height: 1.6; overflow-x: hidden; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--sand-light); }
+  ::-webkit-scrollbar-thumb { background: var(--sand-dark); border-radius: 3px; }
+
+  /* ===== AUTH OVERLAY ===== */
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: linear-gradient(135deg, #1a0d12 0%, #2d1a22 50%, #1a1420 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+  }
+  .auth-overlay.hidden { display: none; }
+  .auth-box {
+    background: var(--white); border-radius: var(--radius-xl);
+    padding: 2.5rem 2rem; width: 100%; max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    animation: fadeIn 0.4s ease;
+  }
+  .auth-logo {
+    font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
+    color: var(--rose-dark); letter-spacing: 0.08em; text-align: center; margin-bottom: 0.25rem;
+  }
+  .auth-logo span { color: var(--gold); }
+  .auth-tagline { font-size: 0.78rem; color: var(--muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+  .auth-tabs { display: flex; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--sand); margin-bottom: 1.75rem; }
+  .auth-tab {
+    flex: 1; padding: 0.65rem; text-align: center;
+    font-size: 0.8rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
+    cursor: pointer; border: none; background: transparent; color: var(--muted);
+    transition: var(--transition);
+  }
+  .auth-tab.active { background: var(--rose); color: white; }
+  .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+  .auth-form.hidden { display: none; }
+  .auth-field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .auth-field label { font-size: 0.75rem; font-weight: 500; color: var(--ink); letter-spacing: 0.04em; }
+  .auth-input {
+    padding: 0.75rem 1rem; border: 1.5px solid var(--sand);
+    border-radius: var(--radius-md); background: var(--sand-light);
+    color: var(--charcoal); font-family: var(--font-body); font-size: 0.9rem;
+    outline: none; transition: var(--transition);
+  }
+  .auth-input:focus { border-color: var(--rose); background: var(--white); }
+  .auth-input.error { border-color: #c0392b; }
+  .auth-err { font-size: 0.75rem; color: #c0392b; min-height: 1rem; }
+  .auth-btn {
+    margin-top: 0.5rem; padding: 0.9rem;
+    background: var(--rose); color: white;
+    border: none; border-radius: 100px;
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+  }
+  .auth-btn:hover { background: var(--rose-dark); transform: translateY(-1px); }
+  .auth-divider { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--sand); }
+  .auth-divider span { font-size: 0.72rem; color: var(--muted); }
+  .auth-bg-deco {
+    position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  }
+  .auth-bg-deco::before {
+    content: ''; position: absolute;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,98,122,0.15) 0%, transparent 70%);
+    top: -200px; right: -100px;
+  }
+  .auth-bg-deco::after {
+    content: ''; position: absolute;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,108,0.1) 0%, transparent 70%);
+    bottom: -100px; left: -100px;
+  }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 64px;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,98,122,0.15); transition: var(--transition);
+  }
+  [data-theme="dark"] nav { background: rgba(20,20,24,0.85); }
+  .nav-logo { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--rose-dark); letter-spacing: 0.08em; cursor: pointer; }
+  .nav-logo span { color: var(--gold); }
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+  .nav-links a, .nav-links button {
+    font-family: var(--font-body); font-size: 0.82rem; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink); background: none; border: none;
+    padding: 0.5rem 0.85rem; border-radius: var(--radius-sm);
+    cursor: pointer; text-decoration: none; transition: var(--transition);
+  }
+  .nav-links a:hover, .nav-links button:hover { background: var(--rose-light); color: var(--rose-dark); }
+  .nav-links a.active { color: var(--rose); }
+  .nav-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .btn-theme {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--sand); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; transition: var(--transition);
+  }
+  .btn-theme:hover { background: var(--rose-light); }
+  .nav-user {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  }
+  .nav-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--rose), var(--gold));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 0.9rem; color: white; font-weight: 700;
+  }
+  .btn-signout {
+    font-size: 0.75rem; color: var(--muted); background: none; border: none;
+    cursor: pointer; padding: 0.4rem 0.75rem; border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+  .btn-signout:hover { background: var(--rose-light); color: var(--rose-dark); }
+
+  /* ===== PAGES ===== */
+  .page { display: none; padding-top: 64px; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* ===== HERO ===== */
+  .hero { position: relative; overflow: hidden; min-height: 92vh; display: flex; align-items: center; background: linear-gradient(135deg, #1a0d12 0%, #2d1a22 40%, #1a1420 100%); }
+  .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 65% 40%, rgba(201,98,122,0.18) 0%, transparent 70%), radial-gradient(ellipse 40% 50% at 80% 70%, rgba(201,168,108,0.12) 0%, transparent 60%); }
+  .hero-grid { position: absolute; inset: 0; opacity: 0.04; background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 60px 60px; }
+  .hero-content { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 4rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .hero-text { color: white; }
+  .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(201,98,122,0.2); border: 1px solid rgba(201,98,122,0.4); padding: 0.35rem 1rem; border-radius: 100px; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #f0a0b5; margin-bottom: 1.5rem; }
+  .hero-eyebrow::before { content: '✦'; font-size: 0.6rem; }
+  .hero-title { font-family: var(--font-display); font-size: clamp(2.8rem, 5vw, 4.5rem); line-height: 1.1; font-weight: 700; margin-bottom: 1.25rem; }
+  .hero-title em { font-style: italic; color: #f0a0b5; }
+  .hero-subtitle { font-size: 1.05rem; color: rgba(255,255,255,0.65); margin-bottom: 2.5rem; max-width: 480px; line-height: 1.75; }
+  .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--rose); color: white; font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; letter-spacing: 0.04em; padding: 0.875rem 2rem; border-radius: 100px; border: none; cursor: pointer; transition: var(--transition); text-decoration: none; }
+  .btn-primary:hover { background: var(--rose-dark); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .btn-ghost { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.2); font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; padding: 0.875rem 1.75rem; border-radius: 100px; cursor: pointer; transition: var(--transition); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.15); }
+  .hero-visual { position: relative; }
+  .hero-cards-stack { position: relative; height: 480px; }
+  .hero-card-item { position: absolute; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); transition: var(--transition); }
+  .hero-card-item:nth-child(1) { width: 220px; height: 300px; top: 20px; left: 60px; transform: rotate(-4deg); background: #c9a86c; }
+  .hero-card-item:nth-child(2) { width: 240px; height: 320px; top: 80px; left: 160px; z-index: 2; background: #c9627a; }
+  .hero-card-item:nth-child(3) { width: 200px; height: 280px; top: 140px; left: 290px; transform: rotate(3deg); background: #5a3e4a; }
+  .hero-card-inner { width: 100%; height: 100%; padding: 1.5rem; display: flex; flex-direction: column; justify-content: flex-end; }
+  .hero-card-label { color: rgba(255,255,255,0.7); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+  .hero-card-title { color: white; font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; }
+  .hero-stats { position: absolute; bottom: -20px; right: 20px; background: white; border-radius: var(--radius-md); padding: 1rem 1.25rem; box-shadow: var(--shadow-md); display: flex; gap: 1.5rem; }
+  [data-theme="dark"] .hero-stats { background: var(--sand); }
+  .hero-stat { text-align: center; }
+  .hero-stat-num { display: block; font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--rose); }
+  .hero-stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ===== SECTION ===== */
+  .section { max-width: 1280px; margin: 0 auto; padding: 4rem 2rem; }
+  .section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; }
+  .section-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 600; color: var(--charcoal); }
+  .section-subtitle { font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem; }
+  .section-link { font-size: 0.8rem; color: var(--rose); text-decoration: none; font-weight: 500; letter-spacing: 0.05em; }
+  .section-link:hover { text-decoration: underline; }
+  .category-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+  .cat-tab { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.5rem 1.25rem; border-radius: 100px; border: 1px solid var(--sand-dark); background: transparent; color: var(--muted); cursor: pointer; transition: var(--transition); }
+  .cat-tab:hover { border-color: var(--rose); color: var(--rose); }
+  .cat-tab.active { background: var(--rose); border-color: var(--rose); color: white; }
+
+  /* ===== FASHION CARD ===== */
+  .fashion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+  .fashion-card { background: var(--white); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); transition: var(--transition); cursor: pointer; border: 1px solid rgba(0,0,0,0.06); }
+  .fashion-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .fashion-card-img { aspect-ratio: 3/4; position: relative; overflow: hidden; background: var(--sand); }
+  .fashion-card-img-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fashion-card-img-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: linear-gradient(135deg, var(--sand) 0%, var(--sand-dark) 100%); transition: transform 0.4s ease; }
+  .fashion-card:hover .fashion-card-img-inner { transform: scale(1.05); }
+  .fashion-card-badge { position: absolute; top: 0.75rem; left: 0.75rem; background: var(--rose); color: white; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.65rem; border-radius: 100px; }
+  .fashion-card-save { position: absolute; top: 0.75rem; right: 0.75rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.9); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; transition: var(--transition); }
+  .fashion-card-save:hover { background: var(--rose-light); }
+  .fashion-card-save.saved { color: var(--rose); }
+  .fashion-card-body { padding: 1rem 1.1rem 1.25rem; }
+  .fashion-card-category { font-size: 0.68rem; color: var(--rose); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 0.35rem; }
+  .fashion-card-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--charcoal); margin-bottom: 0.4rem; line-height: 1.4; }
+  .fashion-card-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.75rem; }
+  .fashion-card-meta { display: flex; align-items: center; justify-content: space-between; }
+  .fashion-card-source { font-size: 0.7rem; color: var(--sand-dark); }
+  .fashion-card-read { font-size: 0.72rem; color: var(--rose); font-weight: 500; text-decoration: none; }
+
+  /* ===== NEWS CARD ===== */
+  .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+  .news-card { background: var(--white); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.06); display: flex; flex-direction: column; transition: var(--transition); cursor: pointer; }
+  .news-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .news-card-img { height: 180px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; background: var(--sand); }
+  .news-card-img-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .news-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; }
+  .news-card-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.65rem; border-radius: 100px; background: var(--rose-light); color: var(--rose-dark); margin-bottom: 0.75rem; }
+  .news-card-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--charcoal); line-height: 1.4; margin-bottom: 0.5rem; }
+  .news-card-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.65; flex: 1; }
+  .news-card-footer { padding: 0.75rem 1.25rem; border-top: 1px solid var(--sand); display: flex; justify-content: space-between; align-items: center; }
+  .news-card-date { font-size: 0.72rem; color: var(--muted); }
+  .news-card-link { font-size: 0.75rem; color: var(--rose); font-weight: 600; letter-spacing: 0.04em; text-decoration: none; }
+
+  /* ===== PROFILE ===== */
+  .profile-layout { display: grid; grid-template-columns: 240px 1fr; gap: 2rem; align-items: start; }
+  .profile-card { background: var(--white); border-radius: var(--radius-xl); padding: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.06); position: sticky; top: 64px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; gap: 0.2rem; }
+  .profile-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1rem; background: linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 2rem; color: white; font-weight: 700; }
+  .profile-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; text-align: center; color: var(--charcoal); }
+  .profile-bio { font-size: 0.8rem; color: var(--muted); text-align: center; margin: 0.35rem 0 1.5rem; }
+  .profile-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; margin-bottom: 1.25rem; }
+  .profile-stat { text-align: center; padding: 0.6rem 0.25rem; background: var(--sand-light); border-radius: var(--radius-md); }
+  .profile-stat-num { display: block; font-weight: 600; font-size: 1.2rem; color: var(--rose); }
+  .profile-stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .profile-nav { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; width: 100%; }
+  .profile-nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--ink); cursor: pointer; transition: var(--transition); background: none; border: none; width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+  .profile-nav-item:hover { background: var(--rose-light); color: var(--rose-dark); }
+  .profile-nav-item.active { background: var(--rose-light); color: var(--rose-dark); font-weight: 500; }
+  .profile-nav-icon { font-size: 0.95rem; flex-shrink: 0; }
+  .profile-content { flex: 1; }
+  .profile-tab { display: none; }
+  .profile-tab.active { display: block; }
+
+  /* ===== MOOD BOARD ===== */
+  .moodboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .moodboard-grid { columns: 3; column-gap: 1rem; }
+  .moodboard-item { break-inside: avoid; margin-bottom: 1rem; border-radius: var(--radius-md); overflow: hidden; position: relative; cursor: pointer; background: var(--sand); box-shadow: var(--shadow-sm); transition: var(--transition); }
+  .moodboard-item:hover { transform: scale(1.02); box-shadow: var(--shadow-md); }
+  .moodboard-item-delete { position: absolute; top: 0.5rem; right: 0.5rem; width: 28px; height: 28px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; color: white; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; opacity: 0; z-index: 10; }
+  .moodboard-item:hover .moodboard-item-delete { opacity: 1; }
+  .moodboard-item-delete:hover { background: rgba(192,57,79,0.9); }
+  .moodboard-item-img { width: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: var(--sand); }
+  .moodboard-item-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%); display: flex; align-items: flex-end; padding: 0.75rem; opacity: 0; transition: opacity 0.3s; }
+  .moodboard-item:hover .moodboard-item-overlay { opacity: 1; }
+  .moodboard-item-label { color: white; font-size: 0.75rem; font-weight: 500; }
+  .upload-zone { border: 2px dashed var(--sand-dark); border-radius: var(--radius-lg); padding: 2.5rem; text-align: center; cursor: pointer; transition: var(--transition); margin-bottom: 1.5rem; background: var(--sand-light); }
+  .upload-zone:hover { border-color: var(--rose); background: var(--rose-light); }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .upload-text { font-size: 0.9rem; color: var(--muted); }
+  .upload-text strong { color: var(--rose); }
+
+  /* ===== QUIZ ===== */
+  .quiz-container { background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
+  .quiz-progress-bar { height: 4px; background: var(--sand); }
+  .quiz-progress-fill { height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width 0.4s ease; }
+  .quiz-header { padding: 2rem 2.5rem 1.5rem; background: linear-gradient(135deg, #1a0d12, #2d1a22); }
+  .quiz-step-label { font-size: 0.72rem; color: rgba(240,160,181,0.8); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+  .quiz-question { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: white; line-height: 1.35; }
+  .quiz-hint { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem; }
+  .quiz-body { padding: 2rem 2.5rem; }
+  .quiz-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+  .quiz-option { padding: 1rem; border: 2px solid var(--sand); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); text-align: center; background: var(--sand-light); }
+  .quiz-option:hover { border-color: var(--rose); }
+  .quiz-option.selected { border-color: var(--rose); background: var(--rose-light); }
+  .quiz-option-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+  .quiz-option-label { font-size: 0.82rem; font-weight: 500; color: var(--charcoal); }
+  .quiz-option-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+  .quiz-input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .quiz-input-wrap label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--ink); margin-bottom: 0.5rem; }
+  .quiz-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--sand); border-radius: var(--radius-md); background: var(--sand-light); color: var(--charcoal); font-family: var(--font-body); font-size: 0.9rem; transition: var(--transition); outline: none; }
+  .quiz-input:focus { border-color: var(--rose); }
+  .quiz-footer { padding: 1.5rem 2.5rem; border-top: 1px solid var(--sand); display: flex; justify-content: space-between; align-items: center; }
+  .quiz-nav-btns { display: flex; gap: 0.75rem; }
+  .btn-quiz-back { padding: 0.75rem 1.5rem; border-radius: 100px; border: 1px solid var(--sand-dark); background: transparent; color: var(--ink); font-family: var(--font-body); font-size: 0.875rem; cursor: pointer; transition: var(--transition); }
+  .btn-quiz-back:hover { background: var(--sand); }
+  .btn-quiz-next { padding: 0.75rem 2rem; border-radius: 100px; background: var(--rose); color: white; border: none; font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: var(--transition); }
+  .btn-quiz-next:hover { background: var(--rose-dark); transform: translateY(-1px); }
+  .undertone-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .undertone-card { border: 2px solid var(--sand); border-radius: var(--radius-md); overflow: hidden; cursor: pointer; transition: var(--transition); }
+  .undertone-card.selected { border-color: var(--rose); }
+  .undertone-swatch { height: 80px; display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
+  .undertone-swatch span { width: 24px; height: 24px; border-radius: 50%; }
+  .undertone-body { padding: 0.75rem; text-align: center; }
+  .undertone-name { font-size: 0.875rem; font-weight: 500; color: var(--charcoal); }
+  .undertone-desc { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* ===== RESULTS ===== */
+  .result-container { max-width: 900px; margin: 0 auto; }
+  .result-hero { background: linear-gradient(135deg, #1a0d12, #2d1a22); border-radius: var(--radius-xl); padding: 2.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem; }
+  .result-avatar-circle { width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--rose), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .result-intro-label { font-size: 0.7rem; color: rgba(240,160,181,0.7); text-transform: uppercase; letter-spacing: 0.12em; }
+  .result-intro-title { font-family: var(--font-display); font-size: 1.5rem; color: white; font-weight: 600; margin: 0.25rem 0; }
+  .result-intro-sub { font-size: 0.85rem; color: rgba(255,255,255,0.55); }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  .result-card { background: var(--white); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.06); }
+  .result-card-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--rose); font-weight: 600; margin-bottom: 1rem; }
+  .palette-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .palette-swatch { width: 40px; height: 40px; border-radius: var(--radius-sm); position: relative; cursor: pointer; transition: transform 0.2s; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; }
+  .palette-swatch:hover { transform: scale(1.1); }
+  .palette-swatch-label { font-size: 0.55rem; font-weight: 600; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+  .outfit-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--sand); }
+  .outfit-item:last-child { border: none; }
+  .outfit-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--rose-light); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  .outfit-detail { flex: 1; }
+  .outfit-name { font-size: 0.875rem; font-weight: 500; color: var(--charcoal); }
+  .outfit-why { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.5; }
+  .dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dos-list, .donts-list { padding: 0; list-style: none; }
+  .dos-list li, .donts-list li { font-size: 0.82rem; padding: 0.4rem 0; display: flex; align-items: flex-start; gap: 0.5rem; }
+  .dos-list li::before { content: '✓'; color: #4caf50; font-weight: 700; flex-shrink: 0; }
+  .donts-list li::before { content: '✗'; color: var(--rose); font-weight: 700; flex-shrink: 0; }
+  .loading-spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; gap: 1rem; }
+  .spinner { width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--sand); border-top-color: var(--rose); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--font-display); font-size: 1rem; color: var(--muted); }
+  .event-meter { margin: 1rem 0; }
+  .event-meter-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+  .event-meter-track { height: 8px; background: var(--sand); border-radius: 100px; overflow: hidden; }
+  .event-meter-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width 1s ease; }
+
+  /* ===== SAVED ===== */
+  .saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .saved-card { background: var(--white); border-radius: var(--radius-md); overflow: hidden; border: 1px solid rgba(0,0,0,0.06); box-shadow: var(--shadow-sm); cursor: pointer; transition: var(--transition); }
+  .saved-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .saved-card-img { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: var(--sand); }
+  .saved-card-body { padding: 0.75rem; }
+  .saved-card-title { font-size: 0.875rem; font-weight: 500; color: var(--charcoal); }
+  .saved-card-date { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state { text-align: center; padding: 4rem 2rem; }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-title { font-family: var(--font-display); font-size: 1.3rem; color: var(--charcoal); margin-bottom: 0.5rem; }
+  .empty-desc { font-size: 0.875rem; color: var(--muted); }
+
+  /* ===== FOOTER ===== */
+  footer { background: var(--charcoal-mid); color: var(--sand); padding: 3rem 2rem; margin-top: 4rem; }
+  [data-theme="dark"] footer { background: #0e0e14; }
+  .footer-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2rem; }
+  .footer-brand h3 { font-family: var(--font-display); font-size: 1.3rem; color: var(--rose-light); margin-bottom: 0.75rem; }
+  .footer-brand p { font-size: 0.82rem; color: var(--sand-dark); line-height: 1.7; max-width: 240px; }
+  .footer-col h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--sand-dark); margin-bottom: 1rem; }
+  .footer-col a { display: block; font-size: 0.82rem; color: var(--sand); text-decoration: none; margin-bottom: 0.4rem; opacity: 0.7; transition: opacity 0.2s; }
+  .footer-col a:hover { opacity: 1; }
+  .footer-bottom { max-width: 1280px; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--sand-dark); }
+
+  /* ===== TOAST ===== */
+  .toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 999; background: var(--charcoal); color: white; padding: 0.875rem 1.5rem; border-radius: var(--radius-md); font-size: 0.875rem; box-shadow: var(--shadow-lg); transform: translateY(100px); opacity: 0; transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 0.5rem; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .nav-toggle { display: none; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--charcoal); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .nav-links.open { display: flex; flex-direction: column; position: fixed; top: 64px; left: 0; right: 0; background: var(--white); padding: 1rem; border-bottom: 1px solid var(--sand); z-index: 99; }
+    .nav-toggle { display: block; }
+    .hero-content { grid-template-columns: 1fr; }
+    .hero-visual { display: none; }
+    .profile-layout { grid-template-columns: 1fr; grid-template-areas: "nav" "card" "content"; }
+    .profile-card { position: static; }
+    .result-grid { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .quiz-input-group { grid-template-columns: 1fr; }
+    .moodboard-grid { columns: 2; }
+    .dos-donts { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .quiz-options { grid-template-columns: 1fr 1fr; }
+    .undertone-options { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .moodboard-grid { columns: 2; }
+    .hero-stats { flex-direction: column; gap: 0.5rem; }
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  .animate-in { animation: fadeIn 0.5s ease forwards; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pulse { animation: pulse 1.5s infinite; }
+</style>
 </head>
 <body>
+
+<!-- ===== AUTH OVERLAY ===== -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-bg-deco"></div>
+  <div class="auth-box">
+    <div class="auth-logo">VOGUE<span>·AI</span></div>
+    <div class="auth-tagline">Your personal style intelligence</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+
+    <!-- SIGN IN FORM -->
+    <div class="auth-form" id="formSignin">
+      <div class="auth-field">
+        <label>Email Address</label>
+        <input class="auth-input" type="email" id="siEmail" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input class="auth-input" type="password" id="siPassword" placeholder="••••••••" />
+      </div>
+      <div class="auth-err" id="siErr"></div>
+      <button class="auth-btn" onclick="handleSignIn()">Sign In →</button>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <div class="auth-form hidden" id="formSignup">
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input class="auth-input" type="text" id="suName" placeholder="Priya Sharma" />
+      </div>
+      <div class="auth-field">
+        <label>Email Address</label>
+        <input class="auth-input" type="email" id="suEmail" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input class="auth-input" type="password" id="suPassword" placeholder="Min 6 characters" />
+      </div>
+      <div class="auth-err" id="suErr"></div>
+      <button class="auth-btn" onclick="handleSignUp()">Create Account →</button>
+    </div>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav id="nav">
@@ -21,148 +450,92 @@
   </div>
   <div class="nav-actions">
     <button class="btn-theme" id="themeToggle" title="Toggle dark mode">🌙</button>
+    <div class="nav-user" id="navUser" style="display:none">
+      <div class="nav-avatar" id="navAvatar">S</div>
+      <button class="btn-signout" onclick="handleSignOut()">Sign out</button>
+    </div>
     <button class="nav-toggle" id="navToggle">☰</button>
   </div>
 </nav>
 
-<!-- TOAST -->
 <div class="toast" id="toast">✓ <span id="toastMsg"></span></div>
 
 <!-- ============== HOME PAGE ============== -->
 <div class="page active" id="page-home">
-
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-bg"></div>
     <div class="hero-grid"></div>
     <div class="hero-content">
       <div class="hero-text animate-in">
         <div class="hero-eyebrow">AI-Powered Style Intelligence</div>
-        <h1 class="hero-title">
-          Dress for <em>every</em><br>version of you.
-        </h1>
-        <p class="hero-subtitle">
-          Meet your personal AI fashion advisor. Get curated outfit recommendations tailored to your body, skin tone, occasion, and style — powered by real trend intelligence.
-        </p>
+        <h1 class="hero-title">Dress for <em>every</em><br>version of you.</h1>
+        <p class="hero-subtitle">Meet your personal AI fashion advisor. Get curated outfit recommendations tailored to your body, skin tone, occasion, and style — powered by real trend intelligence.</p>
         <div class="hero-actions">
-          <button class="btn-primary" onclick="showPage('profile'); showProfileTab('quiz')">
-            ✨ Start Style Quiz
-          </button>
-          <button class="btn-ghost" onclick="showPage('news')">
-            Explore Trends →
-          </button>
+          <button class="btn-primary" onclick="showPage('profile'); showProfileTab('quiz')">✨ Start Style Quiz</button>
+          <button class="btn-ghost" onclick="showPage('news')">Explore Trends →</button>
         </div>
       </div>
       <div class="hero-visual">
         <div class="hero-cards-stack">
-          <div class="hero-card-item">
-            <div class="hero-card-inner">
-              <div class="hero-card-label">Summer 2025</div>
-              <div class="hero-card-title">Linen & Ease</div>
-            </div>
-          </div>
-          <div class="hero-card-item">
-            <div class="hero-card-inner" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.4));">
-              <div class="hero-card-label">Trending Now</div>
-              <div class="hero-card-title">Bold Colours</div>
-            </div>
-          </div>
-          <div class="hero-card-item">
-            <div class="hero-card-inner">
-              <div class="hero-card-label">Accessories</div>
-              <div class="hero-card-title">Statement Gold</div>
-            </div>
-          </div>
+          <div class="hero-card-item"><div class="hero-card-inner"><div class="hero-card-label">Summer 2025</div><div class="hero-card-title">Linen & Ease</div></div></div>
+          <div class="hero-card-item"><div class="hero-card-inner" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.4))"><div class="hero-card-label">Trending Now</div><div class="hero-card-title">Bold Colours</div></div></div>
+          <div class="hero-card-item"><div class="hero-card-inner"><div class="hero-card-label">Accessories</div><div class="hero-card-title">Statement Gold</div></div></div>
         </div>
         <div class="hero-stats">
-          <div class="hero-stat"><span class="hero-stat-num">50K+</span><span class="hero-stat-label">Styles</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">12K+</span><span class="hero-stat-label">Users</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">98%</span><span class="hero-stat-label">Match</span></div>
+          <div class="hero-stat"><span class="hero-stat-num">14K+</span><span class="hero-stat-label">Styles</span></div>
+          <div class="hero-stat"><span class="hero-stat-num" id="statSaved">0</span><span class="hero-stat-label">Saved</span></div>
+          <div class="hero-stat"><span class="hero-stat-num" id="statMoodboard">0</span><span class="hero-stat-label">Mood Board</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- CATEGORY SECTIONS -->
   <div class="section">
     <div class="section-header">
-      <div>
-        <h2 class="section-title">Trending Right Now</h2>
-        <p class="section-subtitle">Curated for the season</p>
-      </div>
-      <a class="section-link" onclick="showPage('news')">View all news →</a>
+      <div><h2 class="section-title">Trending Right Now</h2><p class="section-subtitle">Curated for the season</p></div>
     </div>
     <div class="category-tabs" id="homeCategoryTabs">
-      <button class="cat-tab active" data-cat="all" onclick="filterHomeCards('all', this)">All</button>
-      <button class="cat-tab" data-cat="women" onclick="filterHomeCards('women', this)">Women's</button>
-      <button class="cat-tab" data-cat="seasonal" onclick="filterHomeCards('seasonal', this)">Seasonal</button>
-      <button class="cat-tab" data-cat="accessories" onclick="filterHomeCards('accessories', this)">Accessories</button>
-      <button class="cat-tab" data-cat="footwear" onclick="filterHomeCards('footwear', this)">Footwear</button>
+      <button class="cat-tab active" onclick="filterHomeCards('all',this)">All</button>
+      <button class="cat-tab" onclick="filterHomeCards('women',this)">Women's</button>
+      <button class="cat-tab" onclick="filterHomeCards('seasonal',this)">Seasonal</button>
+      <button class="cat-tab" onclick="filterHomeCards('accessories',this)">Accessories</button>
+      <button class="cat-tab" onclick="filterHomeCards('footwear',this)">Footwear</button>
+      <button class="cat-tab" onclick="filterHomeCards('indian',this)">Indian</button>
+      <button class="cat-tab" onclick="filterHomeCards('western',this)">Western</button>
+      <button class="cat-tab" onclick="filterHomeCards('bodytype',this)">Body Type</button>
     </div>
     <div class="fashion-grid" id="homeCards"></div>
   </div>
 
-  <!-- AI CTA SECTION -->
-  <section style="background: linear-gradient(135deg, #1a0d12, #2d1a22); padding: 5rem 2rem; text-align: center; margin: 2rem 0;">
-    <div style="max-width: 640px; margin: 0 auto;">
-      <p style="font-size: 0.75rem; color: rgba(240,160,181,0.7); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem;">✦ AI Fashion Intelligence</p>
-      <h2 style="font-family: var(--font-display); font-size: 2.5rem; color: white; font-weight: 700; margin-bottom: 1rem; line-height: 1.2;">Your personal stylist,<br><em style="color: #f0a0b5; font-style: italic;">available 24/7</em></h2>
-      <p style="font-size: 1rem; color: rgba(255,255,255,0.6); margin-bottom: 2.5rem; line-height: 1.75;">Take our intelligent style quiz and get AI-powered outfit recommendations tailored exactly to your body proportions, skin undertone, and lifestyle.</p>
-      <button class="btn-primary" onclick="showPage('profile'); showProfileTab('quiz')" style="font-size: 1rem; padding: 1rem 2.5rem;">
-        Begin My Style Analysis →
-      </button>
+  <section style="background:linear-gradient(135deg,#1a0d12,#2d1a22);padding:5rem 2rem;text-align:center;margin:2rem 0;">
+    <div style="max-width:640px;margin:0 auto;">
+      <p style="font-size:0.75rem;color:rgba(240,160,181,0.7);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1rem;">✦ AI Fashion Intelligence</p>
+      <h2 style="font-family:var(--font-display);font-size:2.5rem;color:white;font-weight:700;margin-bottom:1rem;line-height:1.2;">Your personal stylist,<br><em style="color:#f0a0b5;font-style:italic;">available 24/7</em></h2>
+      <p style="font-size:1rem;color:rgba(255,255,255,0.6);margin-bottom:2.5rem;line-height:1.75;">Take our intelligent style quiz and get AI-powered outfit recommendations tailored exactly to your body proportions, skin undertone, and lifestyle.</p>
+      <button class="btn-primary" onclick="showPage('profile');showProfileTab('quiz')" style="font-size:1rem;padding:1rem 2.5rem;">Begin My Style Analysis →</button>
     </div>
   </section>
 
   <footer>
     <div class="footer-inner">
-      <div class="footer-brand">
-        <h3>VOGUE·AI</h3>
-        <p>Your personal AI fashion advisor — delivering personalized style, trend intelligence, and outfit curation powered by artificial intelligence.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Explore</h4>
-        <a href="#">Trending Now</a>
-        <a href="#">Fashion News</a>
-        <a href="#">Style Guides</a>
-        <a href="#">Lookbooks</a>
-      </div>
-      <div class="footer-col">
-        <h4>Features</h4>
-        <a href="#">Style Quiz</a>
-        <a href="#">Mood Board</a>
-        <a href="#">AI Advisor</a>
-        <a href="#">Saved Outfits</a>
-      </div>
-      <div class="footer-col">
-        <h4>Company</h4>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Contact</a>
-      </div>
+      <div class="footer-brand"><h3>VOGUE·AI</h3><p>Your personal AI fashion advisor — delivering personalized style, trend intelligence, and outfit curation powered by artificial intelligence.</p></div>
+      <div class="footer-col"><h4>Explore</h4><a href="#">Trending Now</a><a href="#">Fashion News</a><a href="#">Style Guides</a><a href="#">Lookbooks</a></div>
+      <div class="footer-col"><h4>Features</h4><a href="#">Style Quiz</a><a href="#">Mood Board</a><a href="#">AI Advisor</a><a href="#">Saved Outfits</a></div>
+      <div class="footer-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></div>
     </div>
-    <div class="footer-bottom">
-      <span>© 2025 VOGUE·AI. All rights reserved.</span>
-      <span>Powered by Gemini AI</span>
-    </div>
+    <div class="footer-bottom"><span>© 2025 VOGUE·AI. All rights reserved.</span></div>
   </footer>
 </div>
 
 <!-- ============== NEWS PAGE ============== -->
 <div class="page" id="page-news">
   <div class="section">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Fashion News & Insights</h2>
-        <p class="section-subtitle">Stay ahead of the curve</p>
-      </div>
-    </div>
+    <div class="section-header"><div><h2 class="section-title">Fashion News & Insights</h2><p class="section-subtitle">Stay ahead of the curve</p></div></div>
     <div class="category-tabs" id="newsCategoryTabs">
-      <button class="cat-tab active" data-cat="all" onclick="filterNews('all', this)">All</button>
-      <button class="cat-tab" data-cat="trends" onclick="filterNews('trends', this)">Trends</button>
-      <button class="cat-tab" data-cat="styling" onclick="filterNews('styling', this)">Styling Tips</button>
-      <button class="cat-tab" data-cat="celebrity" onclick="filterNews('celebrity', this)">Celebrity</button>
+      <button class="cat-tab active" onclick="filterNews('all',this)">All</button>
+      <button class="cat-tab" onclick="filterNews('trends',this)">Trends</button>
+      <button class="cat-tab" onclick="filterNews('styling',this)">Styling Tips</button>
+      <button class="cat-tab" onclick="filterNews('celebrity',this)">Celebrity</button>
     </div>
     <div class="news-grid" id="newsGrid"></div>
   </div>
@@ -172,186 +545,355 @@
 <div class="page" id="page-profile">
   <div class="section">
     <div class="profile-layout">
-      <!-- Sidebar -->
       <aside>
         <div class="profile-card">
           <div class="profile-avatar" id="profileAvatar">S</div>
           <div class="profile-name" id="profileName">Style Enthusiast</div>
           <div class="profile-bio">Building my perfect wardrobe ✨</div>
-          <div class="profile-stats">
-            <div class="profile-stat">
-              <span class="profile-stat-num" id="statSaved">0</span>
-              <span class="profile-stat-label">Saved</span>
-            </div>
-            <div class="profile-stat">
-              <span class="profile-stat-num" id="statMoodboard">0</span>
-              <span class="profile-stat-label">Pins</span>
-            </div>
-            <div class="profile-stat">
-              <span class="profile-stat-num" id="statQuizDone">0</span>
-              <span class="profile-stat-label">Looks</span>
-            </div>
-          </div>
-          <nav class="profile-nav">
-            <button class="profile-nav-item active" onclick="showProfileTab('saved')" data-tab="saved">
-              <span class="profile-nav-icon">♡</span> Saved Outfits
-            </button>
-            <button class="profile-nav-item" onclick="showProfileTab('moodboard')" data-tab="moodboard">
-              <span class="profile-nav-icon">⊞</span> Mood Board
-            </button>
-            <button class="profile-nav-item" onclick="showProfileTab('quiz')" data-tab="quiz">
-              <span class="profile-nav-icon">✦</span> Style Quiz
-            </button>
-            <button class="profile-nav-item" onclick="showProfileTab('results')" data-tab="results">
-              <span class="profile-nav-icon">◈</span> My Results
-            </button>
-            <a class="profile-nav-item" href="flair-swipe-ui.html" target="_blank">
-              <span class="profile-nav-icon">🔄</span> Swipe Mode
-            </a>
-          </nav>
+          <button class="profile-nav-item active" onclick="showProfileTab('saved')" data-tab="saved"><span class="profile-nav-icon">♡</span> Saved Outfits</button>
+          <button class="profile-nav-item" onclick="showProfileTab('moodboard')" data-tab="moodboard"><span class="profile-nav-icon">⊞</span> Mood Board</button>
+          <button class="profile-nav-item" onclick="showProfileTab('quiz')" data-tab="quiz"><span class="profile-nav-icon">✦</span> Style Quiz</button>
+          <button class="profile-nav-item" onclick="showProfileTab('results')" data-tab="results"><span class="profile-nav-icon">◈</span> My Results</button>
+          <button class="profile-nav-item" onclick="openDashboard()" id="profileDashboardBtn"><span class="profile-nav-icon">📊</span> Style Analytics</button>
+          <a class="profile-nav-item" href="swipe.html" target="_blank"><span class="profile-nav-icon">🔄</span> Swipe Mode</a>
         </div>
       </aside>
-
-      <!-- Main Content -->
       <main class="profile-content">
-
-        <!-- SAVED OUTFITS TAB -->
         <div class="profile-tab active" id="tab-saved">
-          <h3 style="font-family: var(--font-display); font-size: 1.4rem; margin-bottom: 1.5rem;">Saved Outfits</h3>
-          <div id="savedOutfitsGrid">
-            <div class="empty-state">
-              <div class="empty-icon">♡</div>
-              <div class="empty-title">No saved outfits yet</div>
-              <div class="empty-desc">Browse trending styles and tap the heart to save your favourites.</div>
-              <br>
-              <button class="btn-primary" onclick="showPage('home')" style="margin-top: 1rem;">Explore Styles</button>
-            </div>
-          </div>
+          <h3 style="font-family:var(--font-display);font-size:1.4rem;margin-bottom:1.5rem;">Saved Outfits</h3>
+          <div id="savedOutfitsGrid"><div class="empty-state"><div class="empty-icon">♡</div><div class="empty-title">No saved outfits yet</div><div class="empty-desc">Browse trending styles and tap the heart to save your favourites.</div><br><button class="btn-primary" onclick="showPage('home')" style="margin-top:1rem;">Explore Styles</button></div></div>
         </div>
-
-        <!-- MOOD BOARD TAB -->
         <div class="profile-tab" id="tab-moodboard">
-          <div class="moodboard-header">
-            <h3 style="font-family: var(--font-display); font-size: 1.4rem;">My Mood Board</h3>
-            <button class="btn-primary" onclick="document.getElementById('moodboardUpload').click()">+ Add Image</button>
-          </div>
+          <div class="moodboard-header"><h3 style="font-family:var(--font-display);font-size:1.4rem;">My Mood Board</h3><button class="btn-primary" onclick="document.getElementById('moodboardUpload').click()">+ Add Image</button></div>
           <input type="file" id="moodboardUpload" accept="image/*" multiple style="display:none" onchange="handleMoodboardUpload(event)" />
-          <div class="upload-zone" onclick="document.getElementById('moodboardUpload').click()">
-            <div class="upload-icon">🖼️</div>
-            <div class="upload-text">
-              <strong>Click to upload</strong> or drag and drop<br>
-              <span>PNG, JPG, GIF up to 10MB</span>
-            </div>
-          </div>
+          <div class="upload-zone" onclick="document.getElementById('moodboardUpload').click()"><div class="upload-icon">🖼️</div><div class="upload-text"><strong>Click to upload</strong> or drag and drop<br><span>PNG, JPG, GIF up to 10MB</span></div></div>
           <div class="moodboard-grid" id="moodboardGrid"></div>
-          <div id="moodboardEmpty" class="empty-state">
-            <div class="empty-icon">🎨</div>
-            <div class="empty-title">Your mood board is empty</div>
-            <div class="empty-desc">Upload outfit images you love to curate your personal style board.</div>
-          </div>
+          <div id="moodboardEmpty" class="empty-state"><div class="empty-icon">🎨</div><div class="empty-title">Your mood board is empty</div><div class="empty-desc">Upload outfit images you love to curate your personal style board.</div></div>
         </div>
-
-        <!-- QUIZ TAB -->
         <div class="profile-tab" id="tab-quiz">
           <div class="quiz-container" id="quizContainer">
-            <div class="quiz-progress-bar">
-              <div class="quiz-progress-fill" id="quizProgressFill" style="width: 10%"></div>
-            </div>
+            <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quizProgressFill" style="width:10%"></div></div>
             <div id="quizContent"></div>
           </div>
         </div>
-
-        <!-- RESULTS TAB -->
         <div class="profile-tab" id="tab-results">
-          <div id="resultsContainer">
-            <div class="empty-state">
-              <div class="empty-icon">✦</div>
-              <div class="empty-title">No style analysis yet</div>
-              <div class="empty-desc">Complete the style quiz to get your personalised AI fashion recommendations.</div>
-              <br>
-              <button class="btn-primary" onclick="showProfileTab('quiz')" style="margin-top: 1rem;">Take Style Quiz</button>
-            </div>
-          </div>
+          <div id="resultsContainer"><div class="empty-state"><div class="empty-icon">✦</div><div class="empty-title">No style analysis yet</div><div class="empty-desc">Complete the style quiz to get your personalised AI fashion recommendations.</div><br><button class="btn-primary" onclick="showProfileTab('quiz')" style="margin-top:1rem;">Take Style Quiz</button></div></div>
         </div>
-
       </main>
     </div>
   </div>
 </div>
 
 <script>
-// ===== GEMINI API CONFIG =====
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY'; // Replace with your Gemini API key
+/* ============================================================
+   CONSTANTS & CONFIG
+   ============================================================ */
+const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
-// ===== NEWS API CONFIG =====
-const NEWS_API_KEY = 'YOUR_NEWS_API_KEY'; // Replace with your NewsAPI key
-const NEWS_API_BASE = 'https://newsapi.org/v2';
+/* ============================================================
+   AUTH — backend auth using the Postgres database; user session is cached in localStorage
+   ============================================================ */
+let currentUser = JSON.parse(localStorage.getItem('vf_user') || 'null');
 
-// ===== APP STATE =====
+function switchAuthTab(tab) {
+  document.getElementById('tabSignin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  document.getElementById('formSignin').classList.toggle('hidden', tab !== 'signin');
+  document.getElementById('formSignup').classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('siErr').textContent = '';
+  document.getElementById('suErr').textContent = '';
+}
+
+async function handleSignUp() {
+  const name  = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('suPassword').value;
+  const err   = document.getElementById('suErr');
+
+  if (!name)          { err.textContent = 'Please enter your name.'; return; }
+  if (!email.includes('@')) { err.textContent = 'Please enter a valid email.'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: pass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      err.textContent = data.error || 'Signup failed.';
+      return;
+    }
+    loginUser(data.user);
+  } catch (error) {
+    console.error('Signup error:', error);
+    err.textContent = 'Unable to connect to the authentication server.';
+  }
+}
+
+async function handleSignIn() {
+  const email = document.getElementById('siEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('siPassword').value;
+  const err   = document.getElementById('siErr');
+
+  if (!email.includes('@')) { err.textContent = 'Please enter a valid email.'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+
+  try {
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      err.textContent = data.error || 'Sign in failed.';
+      return;
+    }
+    loginUser(data.user);
+  } catch (error) {
+    console.error('Signin error:', error);
+    err.textContent = 'Unable to connect to the authentication server.';
+  }
+}
+
+function loginUser(user) {
+  currentUser = user;
+  localStorage.setItem('vf_user', JSON.stringify(user));
+  document.getElementById('authOverlay').classList.add('hidden');
+  applyUserToUI();
+  showToast(`Welcome back, ${user.name.split(' ')[0]}! ✨`);
+}
+
+function handleSignOut() {
+  localStorage.removeItem('vf_user');
+  currentUser = null;
+  document.getElementById('authOverlay').classList.remove('hidden');
+  document.getElementById('navUser').style.display = 'none';
+  switchAuthTab('signin');
+}
+
+function openDashboard() {
+  const user = currentUser || JSON.parse(localStorage.getItem('vf_user') || 'null');
+  const savedQuiz = localStorage.getItem('vf_results');
+  if (!user?.id && !savedQuiz) {
+    showToast('Sign in or complete the quiz first to view your personalised dashboard.');
+    return;
+  }
+  const url = user?.id ? `/dashboard?userId=${encodeURIComponent(user.id)}` : '/dashboard';
+  window.open(url, '_blank');
+}
+
+function applyUserToUI() {
+  if (!currentUser) return;
+  const first = currentUser.name.split(' ')[0];
+  const initial = currentUser.name.charAt(0).toUpperCase();
+
+  // Nav user chip
+  document.getElementById('navUser').style.display = 'flex';
+  document.getElementById('navAvatar').textContent = initial;
+
+  // Profile card
+  document.getElementById('profileName').textContent = currentUser.name;
+  document.getElementById('profileAvatar').textContent = initial;
+}
+
+/* ============================================================
+   APP STATE
+   ============================================================ */
 const state = {
   theme: 'light',
   savedItems: JSON.parse(localStorage.getItem('vf_saved') || '[]'),
-  moodboard: JSON.parse(localStorage.getItem('vf_moodboard') || '[]'),
-  quizData: {},
-  quizStep: 0,
+  moodboard:  JSON.parse(localStorage.getItem('vf_moodboard') || '[]'),
+  quizData:   {},
+  quizStep:   0,
   lastResults: JSON.parse(localStorage.getItem('vf_results') || 'null'),
   currentPage: 'home',
+  newsArticles: [],
+  newsLoaded: false,
+  isRetake: false,  // true only when user clicks "Retake Quiz"
 };
 
-// ===== FASHION DATA =====
+/* ============================================================
+   QUIZ STEP DEFINITIONS
+   Full quiz = steps 0-5 (measurements, proportions, undertone, occasion, time, comfort)
+   Short quiz = steps 3-5 (occasion, time, comfort) — when profile already saved
+   ============================================================ */
+const allQuizSteps = [
+  {
+    id: 'measurements', title: 'Your Measurements',
+    hint: 'These help us understand your proportions — no judgment, just personalisation.',
+    type: 'inputs',
+    fields: [
+      { key: 'height', label: 'Height (cm)', placeholder: 'e.g. 162' },
+      { key: 'weight', label: 'Weight (kg)', placeholder: 'e.g. 58' },
+    ]
+  },
+  {
+    id: 'proportions', title: 'Your Proportions',
+    hint: 'Think about your natural body shape when standing relaxed.',
+    type: 'multi_select',
+    questions: [
+      { key: 'shoulders', label: 'Shoulder Width', options: [
+        { val:'narrow', icon:'〰️', label:'Narrow', sub:'Narrower than hips' },
+        { val:'average', icon:'—', label:'Average', sub:'Similar to hips' },
+        { val:'broad', icon:'═', label:'Broad', sub:'Wider than hips' },
+      ]},
+      { key: 'waist', label: 'Waist Definition', options: [
+        { val:'slim', icon:'⌀', label:'Defined', sub:'Clear waist curve' },
+        { val:'average', icon:'○', label:'Moderate', sub:'Slight definition' },
+        { val:'wide', icon:'⬡', label:'Wide', sub:'Straight through' },
+      ]},
+      { key: 'hips', label: 'Hip Proportion', options: [
+        { val:'narrow', icon:'↕', label:'Narrow', sub:'Narrower than shoulders' },
+        { val:'balanced', icon:'⊟', label:'Balanced', sub:'Similar to shoulders' },
+        { val:'wide', icon:'⊞', label:'Full', sub:'Wider than shoulders' },
+      ]}
+    ]
+  },
+  {
+    id: 'undertone', title: 'Your Skin Undertone',
+    hint: 'Look at the veins on your inner wrist in natural light.',
+    type: 'undertone',
+    options: [
+      { val:'warm',    name:'Warm',    desc:'Veins look greenish, gold jewellery suits you', swatches:['#D4A855','#C4773A','#8B5E3C'] },
+      { val:'cool',    name:'Cool',    desc:'Veins look bluish-purple, silver jewellery suits you', swatches:['#7B8FB5','#9B7BB5','#C4B5D4'] },
+      { val:'neutral', name:'Neutral', desc:"Can't tell clearly — both warm and cool tones work", swatches:['#A8957A','#B5A090','#D4C4B5'] },
+    ]
+  },
+  {
+    id: 'occasion', title: "What's the Occasion?",
+    hint: "We'll tailor recommendations to suit the setting.",
+    type: 'single_select',
+    options: [
+      { val:'wedding',   icon:'💐', label:'Wedding',     sub:'Guest or bridal' },
+      { val:'interview', icon:'💼', label:'Interview',   sub:'Professional setting' },
+      { val:'party',     icon:'🥂', label:'Party',       sub:'Evening celebration' },
+      { val:'casual',    icon:'☕', label:'Casual',      sub:'Everyday wear' },
+      { val:'date',      icon:'🌹', label:'Date Night',  sub:'Romantic dinner' },
+      { val:'formal',    icon:'🎭', label:'Gala/Formal', sub:'Black tie event' },
+    ]
+  },
+  {
+    id: 'time', title: 'Time of Day',
+    hint: 'Lighting affects how colours and fabrics appear.',
+    type: 'single_select',
+    options: [
+      { val:'morning',   icon:'🌅', label:'Morning',   sub:'6AM – 12PM' },
+      { val:'afternoon', icon:'☀️', label:'Afternoon', sub:'12PM – 5PM' },
+      { val:'evening',   icon:'🌆', label:'Evening',   sub:'5PM – 9PM' },
+      { val:'night',     icon:'🌙', label:'Night',     sub:'9PM onwards' },
+    ]
+  },
+  {
+    id: 'comfort', title: 'Your Comfort Style',
+    hint: 'How adventurous are you feeling today?',
+    type: 'single_select',
+    options: [
+      { val:'classic',      icon:'🏛️', label:'Classic',      sub:'Safe and timeless' },
+      { val:'contemporary', icon:'◈',  label:'Contemporary', sub:'Modern and refined' },
+      { val:'eclectic',     icon:'🎨', label:'Eclectic',     sub:'Mix of styles' },
+      { val:'bold',         icon:'⚡', label:'Bold',         sub:'Statement-making' },
+    ]
+  },
+];
+
+// Steps shown on first time / retake (all 6)
+const FULL_STEPS  = [0,1,2,3,4,5];
+// Steps shown on return visits (only occasion, time, comfort)
+const SHORT_STEPS = [3,4,5];
+
+let activeStepIndices = FULL_STEPS;
+let currentStepPos = 0; // position within activeStepIndices
+
+function getActiveSteps() {
+  return activeStepIndices.map(i => allQuizSteps[i]);
+}
+
+function hasStoredProfile() {
+  return !!localStorage.getItem('userProfile') && !state.isRetake;
+}
+
+/* ============================================================
+   FASHION & NEWS DATA
+   ============================================================ */
 const fashionItems = [
-  { id:1, cat:'women', badge:'New', icon:'👗', category:'Women\'s Fashion', title:'Floral Wrap Midi Dress', desc:'Effortlessly romantic silhouette perfect for garden parties and brunches.', source:'Vogue India' },
-  { id:2, cat:'women', badge:'Hot', icon:'👒', category:'Women\'s Fashion', title:'Wide-Leg Trouser Co-ord', desc:'Power dressing redefined — the matching set that rules every boardroom.', source:'Harper\'s Bazaar' },
-  { id:3, cat:'seasonal', badge:'SS25', icon:'☀️', category:'Summer 2025', title:'Linen Everything', desc:'Breathable, elegant, and endlessly chic — linen is the fabric of the season.', source:'Elle India' },
-  { id:4, cat:'seasonal', badge:'Hot', icon:'🌸', category:'Spring Edit', title:'Pastel Power Palette', desc:'Soft lavenders, buttery yellows, and mint greens take over spring runways.', source:'InStyle' },
-  { id:5, cat:'accessories', badge:'Trending', icon:'💍', category:'Accessories', title:'Statement Layered Necklaces', desc:'Stack delicate chains with bold pendants for that effortless editorial look.', source:'Cosmopolitan' },
-  { id:6, cat:'accessories', badge:'New', icon:'👜', category:'Accessories', title:'Mini Structured Bags', desc:'The micro bag trend evolves — structured silhouettes in rich jewel tones.', source:'Grazia' },
-  { id:7, cat:'footwear', badge:'Must-Have', icon:'👡', category:'Footwear', title:'Mary Jane Block Heels', desc:'The iconic schoolgirl shoe returns with an elevated, fashion-forward twist.', source:'Vogue' },
-  { id:8, cat:'footwear', badge:'Comfort', icon:'👟', category:'Footwear', title:'Platform Loafers', desc:'Chunky soles meet classic silhouettes — the ultimate smart-casual foundation.', source:'Footwear News' },
-  { id:9, cat:'women', icon:'🥻', category:'Women\'s Fashion', title:'Drape Saree Modern Style', desc:'Contemporary draping techniques giving the traditional saree a fresh perspective.', source:'Femina' },
-  { id:10, cat:'seasonal', icon:'🍂', category:'Transitional Wear', title:'Earth Tone Layering', desc:'Rich terracottas, burnt siennas and warm browns for effortless seasonal transitions.', source:'W Magazine' },
-  { id:11, cat:'accessories', icon:'🕶️', category:'Accessories', title:'Geometric Sunglasses', desc:'Angular frames in acetate and metal add sculptural interest to any outfit.', source:'GQ Style' },
-  { id:12, cat:'footwear', icon:'🥿', category:'Footwear', title:'Ballet Flats Renaissance', desc:'Minimalist ballet flats in satin and leather are the quiet luxury footwear hero.', source:'Financial Times' },
+  { id:1,  cat:'women',       badge:'New',      category:"Women's Fashion",  title:'Floral Wrap Midi Dress',         imageUrl:'img/middi dress.jpeg' },
+  { id:2,  cat:'women',       badge:'Hot',      category:"Women's Fashion",  title:'Wide-Leg Trouser Co-ord',       imageUrl:'img/outfit.jpeg' },
+  { id:3,  cat:'seasonal',    badge:'SS25',     category:'Summer 2025',       title:'Linen Everything',            imageUrl:'img/linen fabric.jpeg' },
+  { id:4,  cat:'seasonal',    badge:'Hot',      category:'Spring Edit',        title:'Pastel Power Palette',         imageUrl:'img/spring.jpeg' },
+  { id:5,  cat:'accessories', badge:'Trending', category:'Accessories',        title:'Statement Layered Necklaces',  imageUrl:'img/layered necklace.jpeg' },
+  { id:6,  cat:'accessories', badge:'New',      category:'Accessories',        title:'Mini Structured Bags',         imageUrl:'img/mini bag.jpeg' },
+  { id:7,  cat:'footwear',    badge:'Must-Have', category:'Footwear',           title:'Mary Jane Block Heels',        imageUrl:'img/block heels.jpeg' },
+  { id:8,  cat:'footwear',    badge:'Comfort',  category:'Footwear',           title:'Platform Loafers',              imageUrl:'img/loafers.jpeg' },
+  { id:9,  cat:'women',       badge:null,       category:"Women's Fashion",  title:'Drape Saree Modern Style',          imageUrl:'img/saree.jpeg' },
+  { id:10, cat:'seasonal',    badge:null,       category:'Transitional Wear',  title:'Earth Tone Layering',           imageUrl:'img/earth tone.jpeg' },
+  { id:11, cat:'accessories', badge:null,       category:'Accessories',        title:'Geometric Sunglasses',          imageUrl:'img/sunglasses.jpeg' },
+  { id:12, cat:'footwear',    badge:null,       category:'Footwear',           title:'Ballet Flats Renaissance',    imageUrl:'img/ballet.jpeg' },
+  { id:13, cat:'seasonal',    badge:'Summer',   category:'Summer Ready',        title:'Bright Beach Linen Set',        imageUrl:'img/linen summer.jpg' },
+  { id:14, cat:'seasonal',    badge:'Rain',     category:'Monsoon Capsule',     title:'Waterproof Trench Shift',        imageUrl:'img/rainy.jpg' },
+  { id:15, cat:'seasonal',    badge:'Winter',   category:'Winter Edit',         title:'Cozy Wool Tailored Coat',       imageUrl:'img/wintercoat.jpg' },
+  { id:16, cat:'seasonal',    badge:'Spring',   category:'Spring Bloom',        title:'Light Floral Kimono Wrap',      imageUrl:'img/kimo.jpg' },
+  { id:17, cat:'accessories', badge:'Most Wanted', category:'Accessories',      title:'Chunky Gold Hoops',            imageUrl:'img/gold hoops.jpg' },
+  { id:18, cat:'accessories', badge:'New',      category:'Accessories',        title:'Embellished Clutch Bag',        imageUrl:'img/clutch.jpg' },
+  { id:19, cat:'accessories', badge:'On Trend', category:'Accessories',        title:'Silk Printed Neck Scarf',      imageUrl:'img/scarf.jpg' },
+  { id:20, cat:'footwear',    badge:'New',      category:'Footwear',           title:'Rain-Ready Chelsea Boots',      imageUrl:'img/boots.jpg' },
+  { id:21, cat:'footwear',    badge:'Hot',      category:'Footwear',           title:'Woven Platform Sandals',       imageUrl:'img/sandal.jpg' },
+  { id:22, cat:'footwear',    badge:'Style',    category:'Footwear',           title:'Textured Leather Mules',       imageUrl:'img/mule.jpg' },
+  { id:23, cat:'indian',      badge:'Heritage', category:'Indian Fashion',      title:'Embroidered Bandhani Saree',    imageUrl:'img/bs.jpg' },
+  { id:24, cat:'indian',      badge:'Festive',  category:'Indian Fashion',      title:'Zardosi Lehenga Set',          imageUrl:'img/zl.jpg' },
+  { id:25, cat:'indian',      badge:'Modern',   category:'Indian Fashion',      title:'Silk Kurta & Palazzo',         imageUrl:'img/kurta.jpg' },
+  { id:26, cat:'western',    badge:'Street',   category:'Western Fashion',     title:'Denim Jacket & Cargo Pants',   imageUrl:'img/denim.jpg' },
+  { id:27, cat:'western',    badge:'Chic',     category:'Western Fashion',     title:'Satin Slip Dress Ensemble',    imageUrl:'img/satin.jpg' },
+  { id:28, cat:'western',    badge:'Edge',     category:'Western Fashion',     title:'Tailored Blazer Suit',         imageUrl:'img/suit.jpg' },
+  { id:29, cat:'bodytype',   badge:'Apple',    category:'Body Type',           title:'Apple Shape Do: Structured Waist Jackets',    imageUrl:'img/apple.png' },
+  { id:30, cat:'bodytype',   badge:'Pear',     category:'Body Type',           title:'Pear Shape Do: A-Line Skirts & Balance',        imageUrl:'img/pear.jpg' },
+  { id:31, cat:'bodytype',   badge:'Hourglass',category:'Body Type',           title:'Hourglass Do: Fitted Wrap Silhouettes',       imageUrl:'img/hourglass.jpg' },
+  { id:32, cat:'bodytype',   badge:'Rectangle',category:'Body Type',           title:'Rectangle Do: Defined Belts & Layering',       imageUrl:'img/rectangle.jpg' },
+  { id:33, cat:'bodytype',   badge:'Triangle', category:'Body Type',           title:'Inverted Triangle Do: Balanced Hips & Volume',  imageUrl:'img/tri.png' },
+  { id:34, cat:'bodytype',   badge:'Spoon', category:'Body Type',           title:'Spoon Body Do: Hips do not lie',  imageUrl:'img/spoon.png' },
+
 ];
 
 const newsItems = [
-  { cat:'trends', icon:'🌟', tag:'Trends', title:'2025 Spring/Summer Colour Report: What the Runways Are Saying', desc:'From NYFW to Paris, the S/S 2025 season was awash with bold experimentations in colour theory, with designers choosing unexpected palettes that challenge conventional seasonal dressing.', date:'2 hours ago', source:'Vogue' },
-  { cat:'celebrity', icon:'⭐', tag:'Celebrity', title:'How Deepika Padukone\'s Met Gala Look Became the Most Searched Outfit of 2025', desc:'The actress turned global icon stepped onto fashion\'s biggest stage in a look that immediately dominated social media, breaking records for engagement and inspiring thousands of recreations.', date:'4 hours ago', source:'Harper\'s Bazaar' },
-  { cat:'styling', icon:'✂️', tag:'Styling Tips', title:'The 10 Outfit Formulas Every Woman Should Know', desc:'Fashion editors reveal the capsule combinations that work for every body type, occasion, and budget — the building blocks of a truly functional yet stylish wardrobe.', date:'Yesterday', source:'Elle' },
-  { cat:'trends', icon:'🔮', tag:'Trends', title:'Quiet Luxury vs. Loud Fashion: The Great Style Divide of 2025', desc:'As the minimalist old-money aesthetic battles maximalism on social media, we explore which direction the broader fashion market is actually moving — and what it means for your wardrobe.', date:'Yesterday', source:'Business of Fashion' },
-  { cat:'celebrity', icon:'🎬', tag:'Celebrity', title:'Inside Alia Bhatt\'s Maternity Fashion Evolution: Redefining Pregnancy Style', desc:'The Bollywood star has become an unlikely style icon for expectant mothers everywhere, showing that maternity fashion can be just as considered, intentional, and chic as any other dressing moment.', date:'2 days ago', source:'Femina' },
-  { cat:'styling', icon:'💡', tag:'Styling Tips', title:'How to Dress for Your Skin Undertone: A Colour Guide That Actually Works', desc:'Understanding whether you\'re warm, cool, or neutral can transform the way you shop and dress. Our comprehensive guide to undertone-led colour selection is your new wardrobe bible.', date:'2 days ago', source:'InStyle' },
-  { cat:'trends', icon:'👜', tag:'Trends', title:'The Return of the Statement Bag: Why It\'s More Than Just a Trend', desc:'From the Birkin to the Baguette, iconic bags have always been cultural touchstones. The 2025 statement bag revival is about more than aesthetics — it\'s a reflection of changing values around investment dressing.', date:'3 days ago', source:'GQ Style' },
-  { cat:'styling', icon:'🎯', tag:'Styling Tips', title:'Capsule Wardrobe for Every Budget: From ₹5,000 to ₹50,000', desc:'You don\'t need a designer budget to dress well. Our curated capsule wardrobes at multiple price points prove that considered purchasing and versatile basics are the real foundations of great personal style.', date:'3 days ago', source:'Grazia India' },
-  { cat:'celebrity', icon:'🌹', tag:'Celebrity', title:'Sabrina Carpenter\'s Wardrobe and the Cottagecore Revival No One Predicted', desc:'The pop star\'s off-duty style choices have sparked a renewed interest in feminine, nature-inspired dressing that is making its way from social media directly to the high street.', date:'4 days ago', source:'Rolling Stone Style' },
+  { cat:'trends',   icon:'🌟', tag:'Trends',       title:'2025 Spring/Summer Colour Report: What the Runways Are Saying',           desc:'From NYFW to Paris, bold experimentations in colour theory challenge conventional seasonal dressing.',   date:'2 hours ago',  source:'Vogue', imageUrl:'img/hero1.jpeg' },
+  { cat:'celebrity',icon:'⭐', tag:'Celebrity',     title:"How Deepika Padukone's Met Gala Look Became the Most Searched Outfit",   desc:'The actress stepped onto fashion\'s biggest stage in a look that immediately dominated social media.',  date:'4 hours ago',  source:"Harper's Bazaar", imageUrl:'img/hero2.jpeg' },
+  { cat:'styling',  icon:'✂️', tag:'Styling Tips',  title:'The 10 Outfit Formulas Every Woman Should Know',                         desc:'Fashion editors reveal the capsule combinations that work for every body type, occasion, and budget.', date:'Yesterday',    source:'Elle', imageUrl:'img/hero3.jpeg' },
+  { cat:'trends',   icon:'🔮', tag:'Trends',        title:'Quiet Luxury vs. Loud Fashion: The Great Style Divide of 2025',          desc:'As the minimalist old-money aesthetic battles maximalism, we explore which direction the market moves.', date:'Yesterday',   source:'Business of Fashion', imageUrl:'img/hero4.jpeg' },
+  { cat:'celebrity',icon:'🎬', tag:'Celebrity',     title:"Inside Alia Bhatt's Maternity Fashion Evolution",                        desc:'The Bollywood star has become an unlikely style icon for expectant mothers everywhere.',                date:'2 days ago',   source:'Femina', imageUrl:'img/mini bag.jpeg' },
+  { cat:'styling',  icon:'💡', tag:'Styling Tips',  title:'How to Dress for Your Skin Undertone: A Colour Guide That Actually Works',desc:'Understanding warm, cool, or neutral undertones can transform the way you shop and dress.',           date:'2 days ago',   source:'InStyle', imageUrl:'img/pastel fabrics.jpeg' },
+  { cat:'trends',   icon:'👜', tag:'Trends',        title:'The Return of the Statement Bag: Why It\'s More Than Just a Trend',      desc:'From the Birkin to the Baguette, iconic bags reflect changing values around investment dressing.',      date:'3 days ago',   source:'GQ Style', imageUrl:'img/bags.jpeg' },
+  { cat:'styling',  icon:'🎯', tag:'Styling Tips',  title:'Capsule Wardrobe for Every Budget: From ₹5,000 to ₹50,000',             desc:'You don\'t need a designer budget. Considered purchasing and versatile basics are the real foundation.',  date:'3 days ago',  source:'Grazia India', imageUrl:'img/linen fabric.jpeg' },
+  { cat:'celebrity',icon:'🌹', tag:'Celebrity',     title:"Sabrina Carpenter's Wardrobe and the Cottagecore Revival",               desc:"The pop star's off-duty style choices have sparked renewed interest in feminine, nature-inspired dressing.", date:'4 days ago', source:'Rolling Stone Style', imageUrl:'img/spring.jpeg' },
 ];
 
-// ===== RENDER HOME CARDS =====
+/* ============================================================
+   RENDER HOME / NEWS
+   ============================================================ */
 function renderHomeCards(filter = 'all') {
   const container = document.getElementById('homeCards');
   const items = filter === 'all' ? fashionItems : fashionItems.filter(i => i.cat === filter);
   container.innerHTML = items.map(item => `
     <div class="fashion-card" onclick="openFashionItem(${item.id})">
       <div class="fashion-card-img">
-        <div class="fashion-card-img-inner">${item.icon}</div>
+        ${item.imageUrl || item.image ? `<img class="fashion-card-img-media" src="${encodeURI((item.imageUrl || item.image).replace(/'/g, "%27"))}" alt="" />` : ''}
+        <div class="fashion-card-img-inner">${item.imageUrl || item.image ? '' : item.icon}</div>
         ${item.badge ? `<span class="fashion-card-badge">${item.badge}</span>` : ''}
         <button class="fashion-card-save ${state.savedItems.includes(item.id) ? 'saved' : ''}"
-          onclick="event.stopPropagation(); toggleSave(${item.id}, this)">
+          onclick="event.stopPropagation();toggleSave(${item.id},this)">
           ${state.savedItems.includes(item.id) ? '♥' : '♡'}
         </button>
       </div>
       <div class="fashion-card-body">
         <div class="fashion-card-category">${item.category}</div>
         <div class="fashion-card-title">${item.title}</div>
-        <div class="fashion-card-desc">${item.desc}</div>
         <div class="fashion-card-meta">
-          <span class="fashion-card-source">${item.source}</span>
-          <a class="fashion-card-read">Read more →</a>
+         
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function filterHomeCards(cat, btn) {
@@ -367,29 +909,95 @@ function openFashionItem(id) {
 
 function toggleSave(id, btn) {
   const idx = state.savedItems.indexOf(id);
-  if (idx === -1) {
-    state.savedItems.push(id);
-    btn.textContent = '♥';
-    btn.classList.add('saved');
-    showToast('Saved to your collection!');
-  } else {
-    state.savedItems.splice(idx, 1);
-    btn.textContent = '♡';
-    btn.classList.remove('saved');
-    showToast('Removed from collection');
-  }
+  if (idx === -1) { state.savedItems.push(id); btn.textContent = '♥'; btn.classList.add('saved'); showToast('Saved to your collection!'); }
+  else { state.savedItems.splice(idx, 1); btn.textContent = '♡'; btn.classList.remove('saved'); showToast('Removed from collection'); }
   localStorage.setItem('vf_saved', JSON.stringify(state.savedItems));
   document.getElementById('statSaved').textContent = state.savedItems.length;
   renderSavedOutfits();
 }
 
-// ===== RENDER NEWS =====
+function guessNewsCategory(article) {
+  const text = `${article.title || ''} ${article.description || ''}`.toLowerCase();
+  if (/(celebrity|met gala|red carpet|runway|fashion week)/.test(text)) return 'celebrity';
+  if (/(how to|tips|guide|style|styling|wardrobe|outfit|dress|accessor|lookbook|capsule|beauty|fit)/.test(text)) return 'styling';
+  return 'trends';
+}
+
+function getNewsCategory(article) {
+  const content = `${article.title || ''} ${article.description || ''}`.toLowerCase();
+  const categories = {
+    'Runway': ['runway', 'fashion show', 'collection', 'catwalk', 'haute', 'couture'],
+    'Trends': ['trend', 'style', 'look', 'seasonal', 'forecast', 'colour report', 'colour', 'palette'],
+    'Designers': ['designer', 'creative director', 'brand', 'label', 'collection'],
+    'Celebrity': ['celebrity', 'star', 'actor', 'actress', 'singer', 'red carpet', 'met gala'],
+    'Luxury': ['luxury', 'couture', 'haute', 'high-end', 'runway'],
+    'Sustainability': ['sustainable', 'eco-friendly', 'ethical', 'green', 'recycled'],
+    'Street Style': ['street style', 'streetwear', 'urban', 'off-duty', 'casual'],
+    'Beauty': ['beauty', 'makeup', 'skincare', 'cosmetics', 'hair'],
+    'Accessories': ['accessories', 'jewelry', 'jewellery', 'bags', 'shoes', 'jewel'],
+    'Events': ['event', 'gala', 'awards', 'ceremony', 'fashion week']
+  };
+
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => content.includes(keyword))) return category.toLowerCase();
+  }
+  return 'fashion';
+}
+
+function formatNewsDate(iso) {
+  const timestamp = new Date(iso).getTime();
+  if (!timestamp) return 'Latest';
+  const diff = Date.now() - timestamp;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 24) return `${hours || 1} hours ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+}
+
+async function loadFashionNews() {
+  const defaultServer = 'http://localhost:5000';
+  const origin = window.location.origin || '';
+  const isFileProtocol = origin.startsWith('file:') || origin === 'null';
+  const baseUrl = !isFileProtocol ? origin : defaultServer;
+  try {
+    let response = await fetch(`${baseUrl}/api/news`);
+    if (!response.ok && baseUrl !== defaultServer) {
+      response = await fetch(`${defaultServer}/api/news`);
+    }
+    if (!response.ok) throw new Error(`News endpoint failed: ${response.status}`);
+    const json = await response.json();
+    if (!json.success || !Array.isArray(json.articles)) throw new Error('Invalid news response');
+    state.newsArticles = json.articles.map(article => ({
+      cat: article.category || getNewsCategory(article),
+      icon: '📰',
+      tag: article.source || 'Fashion',
+      title: article.title || 'Fashion update',
+      desc: article.description || article.content || 'Latest fashion news and trends.',
+      date: formatNewsDate(article.publishedAt),
+      source: article.source || 'NewsAPI',
+      url: article.url || '#',
+      imageUrl: (article.imageUrl || article.urlToImage || '').startsWith('http') ? (article.imageUrl || article.urlToImage) : '',
+    }));
+  } catch (error) {
+    console.warn('Fashion news load failed:', error);
+  } finally {
+    state.newsLoaded = true;
+    renderNews();
+  }
+}
+
 function renderNews(filter = 'all') {
   const container = document.getElementById('newsGrid');
-  const items = filter === 'all' ? newsItems : newsItems.filter(i => i.cat === filter);
+  const sourceItems = !state.newsLoaded ? newsItems : state.newsArticles;
+  const items = filter === 'all' ? sourceItems : sourceItems.filter(i => i.cat === filter);
+  if (state.newsLoaded && !items.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-title">No fashion news found</div><div class="empty-desc">We couldn’t find any articles from fashion sites right now. Try again later.</div></div>`;
+    return;
+  }
   container.innerHTML = items.map(item => `
-    <div class="news-card" onclick="showToast('Opening article: ${item.title.substring(0,30)}...')">
-      <div class="news-card-img" style="background: var(--sand);">${item.icon}</div>
+    <div class="news-card" onclick="window.open(${JSON.stringify(item.url || '#')}, '_blank')">
+      <div class="news-card-img">
+        ${item.imageUrl ? `<img class="news-card-img-media" src="${encodeURI(item.imageUrl.replace(/'/g, "%27"))}" onerror="this.onerror=null;this.parentNode.innerHTML='📰'" alt="" />` : item.icon}
+      </div>
       <div class="news-card-body">
         <span class="news-card-tag">${item.tag}</span>
         <h3 class="news-card-title">${item.title}</h3>
@@ -397,10 +1005,12 @@ function renderNews(filter = 'all') {
       </div>
       <div class="news-card-footer">
         <span class="news-card-date">${item.date} · ${item.source}</span>
-        <a class="news-card-link">Read →</a>
+        <span class="news-card-link">Read →</span>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
+  if (!state.newsLoaded) {
+    loadFashionNews();
+  }
 }
 
 function filterNews(cat, btn) {
@@ -409,37 +1019,30 @@ function filterNews(cat, btn) {
   renderNews(cat);
 }
 
-// ===== SAVED OUTFITS =====
 function renderSavedOutfits() {
   const container = document.getElementById('savedOutfitsGrid');
   const items = fashionItems.filter(i => state.savedItems.includes(i.id));
   if (!items.length) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">♡</div>
-      <div class="empty-title">No saved outfits yet</div>
-      <div class="empty-desc">Browse trending styles and tap the heart to save your favourites.</div>
-      <br><button class="btn-primary" onclick="showPage('home')" style="margin-top:1rem;">Explore Styles</button>
-    </div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">♡</div><div class="empty-title">No saved outfits yet</div><div class="empty-desc">Browse trending styles and tap the heart.</div><br><button class="btn-primary" onclick="showPage('home')" style="margin-top:1rem;">Explore Styles</button></div>`;
     return;
   }
   container.innerHTML = `<div class="saved-grid">` + items.map(item => `
     <div class="saved-card">
-      <div class="saved-card-img">${item.icon}</div>
-      <div class="saved-card-body">
-        <div class="saved-card-title">${item.title}</div>
-        <div class="saved-card-date">${item.category}</div>
+      <div class="saved-card-img">
+        ${item.imageUrl || item.image ? `<img class="saved-card-img-media" src="${encodeURI((item.imageUrl || item.image).replace(/'/g, "%27"))}" alt="${item.title}" />` : item.icon}
       </div>
-    </div>
-  `).join('') + `</div>`;
+      <div class="saved-card-body"><div class="saved-card-title">${item.title}</div><div class="saved-card-date">${item.category}</div></div>
+    </div>`).join('') + `</div>`;
 }
 
-// ===== MOOD BOARD =====
+/* ============================================================
+   MOOD BOARD
+   ============================================================ */
 function handleMoodboardUpload(event) {
-  const files = event.target.files;
-  Array.from(files).forEach(file => {
+  Array.from(event.target.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      state.moodboard.push({ src: e.target.result, name: file.name, date: new Date().toLocaleDateString() });
+    reader.onload = e => {
+      state.moodboard.push({ src: e.target.result, name: file.name });
       localStorage.setItem('vf_moodboard', JSON.stringify(state.moodboard));
       renderMoodboard();
       document.getElementById('statMoodboard').textContent = state.moodboard.length;
@@ -450,171 +1053,76 @@ function handleMoodboardUpload(event) {
 }
 
 function renderMoodboard() {
-  const grid = document.getElementById('moodboardGrid');
+  const grid  = document.getElementById('moodboardGrid');
   const empty = document.getElementById('moodboardEmpty');
   if (!state.moodboard.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  const heights = [120, 160, 200, 140, 180, 150];
-  grid.innerHTML = state.moodboard.map((item, i) => {
-    const h = heights[i % heights.length];
-    return `<div class="moodboard-item">
-      <div class="moodboard-item-img" style="height:${h}px">
+  const heights = [120,160,200,140,180,150];
+  grid.innerHTML = state.moodboard.map((item, i) => `
+    <div class="moodboard-item">
+      <button class="moodboard-item-delete" onclick="removeMoodboardItem(${i})" title="Remove">✕</button>
+      <div class="moodboard-item-img" style="height:${heights[i%heights.length]}px">
         <img src="${item.src}" style="width:100%;height:100%;object-fit:cover;" alt="${item.name}" />
       </div>
-      <div class="moodboard-item-overlay">
-        <span class="moodboard-item-label">${item.name.substring(0, 20)}</span>
-      </div>
-    </div>`;
-  }).join('');
+      <div class="moodboard-item-overlay"><span class="moodboard-item-label">${item.name.substring(0,20)}</span></div>
+    </div>`).join('');
 }
 
-// ===== QUIZ =====
-const quizSteps = [
-  {
-    id: 'measurements',
-    title: 'Your Measurements',
-    hint: 'These help us understand your proportions — no judgment, just personalisation.',
-    type: 'inputs',
-    fields: [
-      { key: 'height', label: 'Height (cm)', placeholder: 'e.g. 162' },
-      { key: 'weight', label: 'Weight (kg)', placeholder: 'e.g. 58' },
-    ]
-  },
-  {
-    id: 'proportions',
-    title: 'Your Proportions',
-    hint: 'Think about your natural body shape when standing relaxed.',
-    type: 'multi_select',
-    questions: [
-      {
-        key: 'shoulders', label: 'Shoulder Width',
-        options: [
-          { val: 'narrow', icon: '〰️', label: 'Narrow', sub: 'Narrower than hips' },
-          { val: 'average', icon: '—', label: 'Average', sub: 'Similar to hips' },
-          { val: 'broad', icon: '═', label: 'Broad', sub: 'Wider than hips' },
-        ]
-      },
-      {
-        key: 'waist', label: 'Waist Definition',
-        options: [
-          { val: 'slim', icon: '⌀', label: 'Defined', sub: 'Clear waist curve' },
-          { val: 'average', icon: '○', label: 'Moderate', sub: 'Slight definition' },
-          { val: 'wide', label: '⬡', icon: 'Wide', sub: 'Straight through' },
-        ]
-      },
-      {
-        key: 'hips', label: 'Hip Proportion',
-        options: [
-          { val: 'narrow', icon: '↕', label: 'Narrow', sub: 'Narrower than shoulders' },
-          { val: 'balanced', icon: '⊟', label: 'Balanced', sub: 'Similar to shoulders' },
-          { val: 'wide', icon: '⊞', label: 'Full', sub: 'Wider than shoulders' },
-        ]
-      }
-    ]
-  },
-  {
-    id: 'undertone',
-    title: 'Your Skin Undertone',
-    hint: 'Look at the veins on your inner wrist in natural light. This helps identify your colour palette.',
-    type: 'undertone',
-    options: [
-      { val: 'warm', name: 'Warm', desc: 'Veins look greenish, gold jewellery suits you', swatches: ['#D4A855', '#C4773A', '#8B5E3C'] },
-      { val: 'cool', name: 'Cool', desc: 'Veins look bluish-purple, silver jewellery suits you', swatches: ['#7B8FB5', '#9B7BB5', '#C4B5D4'] },
-      { val: 'neutral', name: 'Neutral', desc: 'Can\'t tell clearly — both warm and cool tones work', swatches: ['#A8957A', '#B5A090', '#D4C4B5'] },
-    ]
-  },
-  {
-    id: 'occasion',
-    title: 'What\'s the Occasion?',
-    hint: 'We\'ll tailor recommendations to suit the setting.',
-    type: 'single_select',
-    options: [
-      { val: 'wedding', icon: '💐', label: 'Wedding', sub: 'Guest or bridal' },
-      { val: 'interview', icon: '💼', label: 'Interview', sub: 'Professional setting' },
-      { val: 'party', icon: '🥂', label: 'Party', sub: 'Evening celebration' },
-      { val: 'casual', icon: '☕', label: 'Casual', sub: 'Everyday wear' },
-      { val: 'date', icon: '🌹', label: 'Date Night', sub: 'Romantic dinner' },
-      { val: 'formal', icon: '🎭', label: 'Gala / Formal', sub: 'Black tie event' },
-    ]
-  },
-  {
-    id: 'time',
-    title: 'Time of Day',
-    hint: 'Lighting affects how colours and fabrics appear.',
-    type: 'single_select',
-    options: [
-      { val: 'morning', icon: '🌅', label: 'Morning', sub: '6AM – 12PM' },
-      { val: 'afternoon', icon: '☀️', label: 'Afternoon', sub: '12PM – 5PM' },
-      { val: 'evening', icon: '🌆', label: 'Evening', sub: '5PM – 9PM' },
-      { val: 'night', icon: '🌙', label: 'Night', sub: '9PM onwards' },
-    ]
-  },
-  {
-    id: 'comfort',
-    title: 'Your Comfort Style',
-    hint: 'How adventurous are you feeling today?',
-    type: 'single_select',
-    options: [
-      { val: 'classic', icon: '🏛️', label: 'Classic', sub: 'Safe and timeless' },
-      { val: 'contemporary', icon: '◈', label: 'Contemporary', sub: 'Modern and refined' },
-      { val: 'eclectic', icon: '🎨', label: 'Eclectic', sub: 'Mix of styles' },
-      { val: 'bold', icon: '⚡', label: 'Bold', sub: 'Statement-making' },
-    ]
-  },
-  {
-    id: 'style',
-    title: 'Your Style DNA',
-    hint: 'Choose up to 2 that feel most like you.',
-    type: 'multi_check',
-    options: [
-      { val: 'minimalist', icon: '◯', label: 'Minimalist' },
-      { val: 'romantic', icon: '🌸', label: 'Romantic' },
-      { val: 'bohemian', icon: '🪶', label: 'Bohemian' },
-      { val: 'streetwear', icon: '🏙️', label: 'Streetwear' },
-      { val: 'preppy', icon: '📐', label: 'Preppy' },
-      { val: 'glam', icon: '✨', label: 'Glam' },
-      { val: 'vintage', icon: '🎞️', label: 'Vintage' },
-      { val: 'androgynous', icon: '⚖️', label: 'Androgynous' },
-    ],
-    max: 2
-  },
-];
+function removeMoodboardItem(index) {
+  state.moodboard.splice(index, 1);
+  localStorage.setItem('vf_state', JSON.stringify(state));
+  renderMoodboard();
+}
 
-let multiCheckSelected = [];
+/* ============================================================
+   QUIZ
+   ============================================================ */
+function initQuiz(retake = false) {
+  state.isRetake  = retake;
+  state.quizData  = {};
+  currentStepPos  = 0;
 
-function initQuiz() {
-  state.quizStep = 0;
-  state.quizData = {};
-  multiCheckSelected = [];
+  // Load saved profile data into quizData so short-quiz still has body/undertone
+  const saved = JSON.parse(localStorage.getItem('userProfile') || 'null');
+  if (saved && !retake) {
+    state.quizData.bodyType  = saved.bodyType;
+    state.quizData.undertone = saved.undertone;
+    state.quizData.height    = saved.height;
+    state.quizData.weight    = saved.weight;
+    state.quizData.shoulders = saved.shoulders;
+    state.quizData.waist     = saved.waist;
+    state.quizData.hips      = saved.hips;
+  }
+
+  activeStepIndices = (retake || !hasStoredProfile()) ? FULL_STEPS : SHORT_STEPS;
   renderQuizStep();
 }
 
 function renderQuizStep() {
-  const step = quizSteps[state.quizStep];
-  const pct = Math.round(((state.quizStep) / quizSteps.length) * 100) + 10;
+  const steps   = getActiveSteps();
+  const total   = steps.length;
+  const step    = steps[currentStepPos];
+  const pct     = Math.round(((currentStepPos) / total) * 100) + 10;
   document.getElementById('quizProgressFill').style.width = pct + '%';
 
   let body = '';
+
   if (step.type === 'inputs') {
-    body = `<div class="quiz-input-group">
-      ${step.fields.map(f => `
-        <div class="quiz-input-wrap">
-          <label>${f.label}</label>
-          <input class="quiz-input" type="number" id="qi_${f.key}" placeholder="${f.placeholder}" value="${state.quizData[f.key] || ''}" />
-        </div>
-      `).join('')}
-    </div>`;
+    body = `<div class="quiz-input-group">${step.fields.map(f => `
+      <div class="quiz-input-wrap">
+        <label>${f.label}</label>
+        <input class="quiz-input" type="number" id="qi_${f.key}" placeholder="${f.placeholder}" value="${state.quizData[f.key] || ''}" />
+      </div>`).join('')}</div>`;
+
   } else if (step.type === 'single_select') {
-    body = `<div class="quiz-options">
-      ${step.options.map(opt => `
-        <div class="quiz-option ${state.quizData[step.id] === opt.val ? 'selected' : ''}"
-          onclick="selectQuizOption('${step.id}', '${opt.val}', this)">
-          <div class="quiz-option-icon">${opt.icon}</div>
-          <div class="quiz-option-label">${opt.label}</div>
-          ${opt.sub ? `<div class="quiz-option-sub">${opt.sub}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>`;
+    body = `<div class="quiz-options">${step.options.map(opt => `
+      <div class="quiz-option ${state.quizData[step.id] === opt.val ? 'selected' : ''}"
+        onclick="selectQuizOption('${step.id}','${opt.val}',this)">
+        <div class="quiz-option-icon">${opt.icon}</div>
+        <div class="quiz-option-label">${opt.label}</div>
+        ${opt.sub ? `<div class="quiz-option-sub">${opt.sub}</div>` : ''}
+      </div>`).join('')}</div>`;
+
   } else if (step.type === 'multi_select') {
     body = step.questions.map(q => `
       <div style="margin-bottom:1.5rem;">
@@ -623,68 +1131,50 @@ function renderQuizStep() {
           ${q.options.map(opt => `
             <div class="quiz-option ${state.quizData[q.key] === opt.val ? 'selected' : ''}"
               style="flex:1;min-width:120px;max-width:180px;"
-              onclick="selectQuizOption('${q.key}', '${opt.val}', this, '${q.key}')">
+              onclick="selectQuizOption('${q.key}','${opt.val}',this,'${q.key}')">
               <div class="quiz-option-icon">${opt.icon}</div>
               <div class="quiz-option-label">${opt.label}</div>
               <div class="quiz-option-sub">${opt.sub}</div>
-            </div>
-          `).join('')}
+            </div>`).join('')}
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
+
   } else if (step.type === 'undertone') {
-    body = `<div class="undertone-options">
-      ${step.options.map(opt => `
-        <div class="undertone-card ${state.quizData.undertone === opt.val ? 'selected' : ''}"
-          onclick="selectUndertone('${opt.val}', this)">
-          <div class="undertone-swatch" style="background: linear-gradient(135deg, ${opt.swatches[0]}22, ${opt.swatches[1]}33);">
-            ${opt.swatches.map(c => `<span style="background:${c};"></span>`).join('')}
-          </div>
-          <div class="undertone-body">
-            <div class="undertone-name">${opt.name}</div>
-            <div class="undertone-desc">${opt.desc}</div>
-          </div>
+    body = `<div class="undertone-options">${step.options.map(opt => `
+      <div class="undertone-card ${state.quizData.undertone === opt.val ? 'selected' : ''}"
+        onclick="selectUndertone('${opt.val}',this)">
+        <div class="undertone-swatch" style="background:linear-gradient(135deg,${opt.swatches[0]}22,${opt.swatches[1]}33);">
+          ${opt.swatches.map(c => `<span style="background:${c};"></span>`).join('')}
         </div>
-      `).join('')}
-    </div>`;
-  } else if (step.type === 'multi_check') {
-    body = `<div class="quiz-options">
-      ${step.options.map(opt => `
-        <div class="quiz-option ${multiCheckSelected.includes(opt.val) ? 'selected' : ''}"
-          onclick="toggleMultiCheck('${opt.val}', this, ${step.max})">
-          <div class="quiz-option-icon">${opt.icon}</div>
-          <div class="quiz-option-label">${opt.label}</div>
+        <div class="undertone-body">
+          <div class="undertone-name">${opt.name}</div>
+          <div class="undertone-desc">${opt.desc}</div>
         </div>
-      `).join('')}
-    </div>
-    <p style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;">Choose up to ${step.max}. Selected: ${multiCheckSelected.length}/${step.max}</p>`;
+      </div>`).join('')}</div>`;
   }
 
-  const isLast = state.quizStep === quizSteps.length - 1;
+  const isLast = currentStepPos === total - 1;
   document.getElementById('quizContent').innerHTML = `
     <div class="quiz-header">
-      <div class="quiz-step-label">Step ${state.quizStep + 1} of ${quizSteps.length}</div>
+      <div class="quiz-step-label">Step ${currentStepPos + 1} of ${total}</div>
       <div class="quiz-question">${step.title}</div>
       ${step.hint ? `<div class="quiz-hint">${step.hint}</div>` : ''}
     </div>
     <div class="quiz-body">${body}</div>
     <div class="quiz-footer">
-      <span style="font-size:0.8rem;color:var(--muted);">${state.quizStep + 1} / ${quizSteps.length} complete</span>
+      <span style="font-size:0.8rem;color:var(--muted);">${currentStepPos + 1} / ${total} complete</span>
       <div class="quiz-nav-btns">
-        ${state.quizStep > 0 ? `<button class="btn-quiz-back" onclick="quizBack()">← Back</button>` : ''}
-        <button class="btn-quiz-next" onclick="${isLast ? 'submitQuiz()' : 'quizNext()'}" id="quizNextBtn">
+        ${currentStepPos > 0 ? `<button class="btn-quiz-back" onclick="quizBack()">← Back</button>` : ''}
+        <button class="btn-quiz-next" onclick="${isLast ? 'submitQuiz()' : 'quizNext()'}">
           ${isLast ? '✨ Generate My Style' : 'Continue →'}
         </button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function selectQuizOption(key, val, el, groupKey) {
   const group = groupKey || key;
-  // Deselect others in same group
-  const container = el.closest('.quiz-body').querySelectorAll(`[onclick*="'${group}'"]`);
-  container.forEach(e => e.classList.remove('selected'));
+  el.closest('.quiz-body').querySelectorAll(`[onclick*="'${group}'"]`).forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
   state.quizData[key] = val;
 }
@@ -695,70 +1185,55 @@ function selectUndertone(val, el) {
   state.quizData.undertone = val;
 }
 
-function toggleMultiCheck(val, el, max) {
-  const idx = multiCheckSelected.indexOf(val);
-  if (idx !== -1) {
-    multiCheckSelected.splice(idx, 1);
-    el.classList.remove('selected');
-  } else if (multiCheckSelected.length < max) {
-    multiCheckSelected.push(val);
-    el.classList.add('selected');
-  } else {
-    showToast(`Maximum ${max} styles selected`);
-    return;
-  }
-  state.quizData.styles = [...multiCheckSelected];
-  const cnt = el.closest('.quiz-body').querySelector('p');
-  if (cnt) cnt.textContent = `Choose up to ${max}. Selected: ${multiCheckSelected.length}/${max}`;
-}
-
 function quizNext() {
-  const step = quizSteps[state.quizStep];
-  if (step.type === 'inputs') {
-    step.fields.forEach(f => {
-      const val = document.getElementById('qi_' + f.key)?.value;
-      if (val) state.quizData[f.key] = val;
-    });
-  }
-  state.quizStep++;
+  saveCurrentStepInputs();
+  currentStepPos++;
   renderQuizStep();
 }
 
 function quizBack() {
-  state.quizStep--;
+  currentStepPos--;
   renderQuizStep();
 }
 
-async function submitQuiz() {
-  // Save last step inputs
-  const step = quizSteps[state.quizStep];
+function saveCurrentStepInputs() {
+  const step = getActiveSteps()[currentStepPos];
   if (step.type === 'inputs') {
     step.fields.forEach(f => {
       const val = document.getElementById('qi_' + f.key)?.value;
       if (val) state.quizData[f.key] = val;
     });
   }
-  state.quizData.styles = multiCheckSelected;
+}
+
+async function submitQuiz() {
+  saveCurrentStepInputs();
 
   // Infer body type from proportions
   const bodyTypeMap = {
-    'broad-wide': 'inverted_triangle',
-    'narrow-narrow': 'rectangle',
-    'average-wide': 'pear',
-    'broad-narrow': 'hourglass',
-    'average-average': 'apple',
+    'broad-wide':'inverted_triangle', 'narrow-narrow':'rectangle',
+    'average-wide':'pear',            'broad-narrow':'hourglass',
+    'average-average':'apple',        'narrow-wide':'pear',
+    'broad-balanced':'hourglass',     'narrow-balanced':'rectangle',
+    'average-balanced':'apple',
   };
-  const bodyTypeKey = `${state.quizData.shoulders || 'average'}-${state.quizData.hips || 'balanced'}`;
-  const bodyTypeValue = (bodyTypeMap[bodyTypeKey] || 'apple').toLowerCase();
+  const bKey = `${state.quizData.shoulders || 'average'}-${state.quizData.hips || 'balanced'}`;
+  const bodyTypeValue = (bodyTypeMap[bKey] || 'apple').toLowerCase();
   state.quizData.bodyType = bodyTypeValue;
-  
-  // Store quiz profile in localStorage for swipe feature
+
+  // Always save/update the profile in localStorage
   localStorage.setItem('userProfile', JSON.stringify({
-    bodyType: bodyTypeValue,
-    undertone: (state.quizData.undertone || 'neutral').toLowerCase()
+    bodyType:  bodyTypeValue,
+    undertone: (state.quizData.undertone || 'neutral').toLowerCase(),
+    height:    state.quizData.height,
+    weight:    state.quizData.weight,
+    shoulders: state.quizData.shoulders,
+    waist:     state.quizData.waist,
+    hips:      state.quizData.hips,
   }));
 
-  // Show loading
+  state.isRetake = false; // reset flag
+
   document.getElementById('quizContent').innerHTML = `
     <div class="loading-spinner">
       <div class="spinner"></div>
@@ -768,172 +1243,78 @@ async function submitQuiz() {
 
   try {
     const result = await callGeminiForFashion(state.quizData);
-    state.lastResults = result;
-    localStorage.setItem('vf_results', JSON.stringify(result));
-    document.getElementById('statQuizDone').textContent = parseInt(document.getElementById('statQuizDone').textContent || 0) + 1;
-    showProfileTab('results');
-    renderResults(result);
-    showToast('Your style analysis is ready! ✨');
-  } catch (err) {
-    // Fallback: use mock data if API unavailable
-    const mockResult = generateMockResults(state.quizData);
-    state.lastResults = mockResult;
-    localStorage.setItem('vf_results', JSON.stringify(mockResult));
-    showProfileTab('results');
-    renderResults(mockResult);
-    showToast('Style analysis complete! ✨');
+    finishQuiz(result);
+  } catch {
+    finishQuiz(generateMockResults(state.quizData));
   }
 }
 
-// ===== GEMINI API CALL =====
+function finishQuiz(result) {
+  state.lastResults = result;
+  localStorage.setItem('vf_results', JSON.stringify(result));
+  document.getElementById('statQuizDone').textContent =
+    parseInt(document.getElementById('statQuizDone').textContent || 0) + 1;
+  showProfileTab('results');
+  renderResults(result);
+  showToast('Your style analysis is ready! ✨');
+}
+
+/* ============================================================
+   GEMINI API
+   ============================================================ */
 async function callGeminiForFashion(data) {
-  const prompt = `You are an expert fashion stylist and personal advisor. Based on the following user profile, provide detailed, personalised fashion recommendations.
+  const prompt = `You are an expert fashion stylist. Based on the following user profile, provide detailed personalised fashion recommendations.
+User Profile: Height: ${data.height||'?'}cm, Weight: ${data.weight||'?'}kg, Body type: ${data.bodyType}, Undertone: ${data.undertone||'neutral'}, Occasion: ${data.occasion||'casual'}, Time: ${data.time||'afternoon'}, Comfort: ${data.comfort||'classic'}.
+Respond ONLY with valid JSON (no markdown):
+{"bodyType":"name","bodyTypeDesc":"desc","stylePersona":"name","outfits":[{"name":"","icon":"","why":""},{"name":"","icon":"","why":""},{"name":"","icon":"","why":""}],"colors":[{"hex":"#hex","name":"name"},{"hex":"#hex","name":"name"},{"hex":"#hex","name":"name"},{"hex":"#hex","name":"name"},{"hex":"#hex","name":"name"}],"dos":["","","",""],"donts":["","","",""],"stylingTips":["","",""],"occasionScore":85,"occasionFeedback":""}`;
 
-User Profile:
-- Height: ${data.height || 'not specified'} cm
-- Weight: ${data.weight || 'not specified'} kg
-- Shoulder width: ${data.shoulders || 'average'}
-- Waist type: ${data.waist || 'average'}
-- Hip proportion: ${data.hips || 'balanced'}
-- Skin undertone: ${data.undertone || 'neutral'}
-- Occasion: ${data.occasion || 'casual'}
-- Time of day: ${data.time || 'afternoon'}
-- Comfort level: ${data.comfort || 'classic'}
-- Style preferences: ${(data.styles || []).join(', ') || 'not specified'}
-
-Please respond ONLY with a valid JSON object (no markdown, no backticks) with this exact structure:
-{
-  "bodyType": "inferred body type name",
-  "bodyTypeDesc": "brief description of inferred body type",
-  "stylePersona": "creative persona name (e.g. The Modern Minimalist)",
-  "outfits": [
-    {"name": "outfit name", "icon": "single emoji", "why": "why this works"},
-    {"name": "outfit name", "icon": "single emoji", "why": "why this works"},
-    {"name": "outfit name", "icon": "single emoji", "why": "why this works"}
-  ],
-  "colors": [
-    {"hex": "#hexcode", "name": "color name"},
-    {"hex": "#hexcode", "name": "color name"},
-    {"hex": "#hexcode", "name": "color name"},
-    {"hex": "#hexcode", "name": "color name"},
-    {"hex": "#hexcode", "name": "color name"}
-  ],
-  "dos": ["what to wear tip 1", "tip 2", "tip 3", "tip 4"],
-  "donts": ["what to avoid 1", "avoid 2", "avoid 3", "avoid 4"],
-  "stylingTips": ["tip 1", "tip 2", "tip 3"],
-  "occasionScore": 85,
-  "occasionFeedback": "event appropriateness feedback sentence"
-}`;
-
-  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
-    })
+  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.7,maxOutputTokens:1500} })
   });
-
-  if (!response.ok) throw new Error('API error');
-  const data2 = await response.json();
-  const text = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  if (!res.ok) throw new Error('API error');
+  const d = await res.json();
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
 }
 
-// ===== MOCK RESULTS (FALLBACK) =====
+/* ============================================================
+   MOCK RESULTS FALLBACK
+   ============================================================ */
 function generateMockResults(data) {
-  const bodyTypes = {
-    'broad-wide': 'Inverted Triangle',
-    'narrow-narrow': 'Rectangle',
-    'average-wide': 'Pear',
-    'broad-narrow': 'Hourglass',
-    'average-average': 'Oval',
+  const bodyTypeLabels = { inverted_triangle:'Inverted Triangle', rectangle:'Rectangle', pear:'Pear', hourglass:'Hourglass', apple:'Apple' };
+  const bodyType = bodyTypeLabels[data.bodyType] || 'Athletic';
+  const warmColors  = [{hex:'#C4773A',name:'Terracotta'},{hex:'#D4A855',name:'Warm Gold'},{hex:'#8B5E3C',name:'Chocolate'},{hex:'#E8A090',name:'Salmon Pink'},{hex:'#6B8E50',name:'Olive Green'}];
+  const coolColors  = [{hex:'#7B8FB5',name:'Steel Blue'},{hex:'#9B7BB5',name:'Lavender'},{hex:'#C4B5D4',name:'Mauve'},{hex:'#5A8A7A',name:'Teal'},{hex:'#B5C4D4',name:'Powder Blue'}];
+  const neutColors  = [{hex:'#A8957A',name:'Warm Taupe'},{hex:'#C4B5A5',name:'Nude'},{hex:'#8A8070',name:'Greige'},{hex:'#D4C4B5',name:'Ivory'},{hex:'#6A7A6A',name:'Sage'}];
+  const colors = data.undertone==='warm' ? warmColors : data.undertone==='cool' ? coolColors : neutColors;
+  const occ = data.occasion || 'casual';
+  const outfitMap = {
+    wedding:   [{name:'Embroidered Anarkali Suit',icon:'👗',why:'Floor-length silhouettes add elegance and elongate beautifully.'},{name:'Silk Wrap Midi Dress',icon:'👘',why:'Wrap cut creates customisable fit for your proportions.'},{name:'Lehenga with Cropped Blouse',icon:'💐',why:'Cropped blouse defines waist while flared skirt balances proportions.'}],
+    interview: [{name:'Tailored Blazer & Trousers',icon:'💼',why:'Sharp tailoring signals confidence in any workplace.'},{name:'Midi Pencil Skirt & Blouse',icon:'👔',why:'Classic proportions, polished without being overdressed.'},{name:'Structured Shirt Dress',icon:'🏢',why:'Single-piece solution — effortlessly put together.'}],
+    party:     [{name:'Sequin Mini Dress',icon:'✨',why:'Light-catching fabric makes a statement under evening lighting.'},{name:'Wide-Leg Jumpsuit',icon:'🥂',why:'Dressy yet comfortable — modern occasion dressing.'},{name:'Satin Slip with Blazer',icon:'🎉',why:'Contrast of structured and fluid creates a fashion-forward look.'}],
+    casual:    [{name:'Linen Co-ord Set',icon:'☀️',why:'Effortless matching set that looks curated with minimal effort.'},{name:'High-Waist Jeans & Tuck-In Top',icon:'👖',why:'Defines your waist and elongates legs.'},{name:'Maxi Dress with Denim Jacket',icon:'🌸',why:'Relaxed yet put-together for any casual setting.'}],
+    date:      [{name:'Floral Wrap Dress',icon:'🌹',why:'Feminine silhouette — effortlessly romantic.'},{name:'Silk Slip & Heel Mules',icon:'💕',why:'Simple elegance — quiet luxury date dressing.'},{name:'Tailored Trousers & Fitted Top',icon:'🥀',why:'Sleek look that channels quiet confidence.'}],
+    formal:    [{name:'Floor-Length Gown',icon:'🎭',why:'Majestic and traditional — the quintessential formal look.'},{name:'Structured Blazer Dress',icon:'🥂',why:'Modern formality for black-tie events.'},{name:'Embellished Saree',icon:'💎',why:'Timeless Indian formal wear — always appropriate.'}],
   };
-  const key = `${data.shoulders || 'average'}-${data.hips || 'balanced'}`;
-  const bodyType = bodyTypes[key] || 'Athletic';
-
-  const warmColors = [
-    {hex:'#C4773A', name:'Terracotta'}, {hex:'#D4A855', name:'Warm Gold'}, {hex:'#8B5E3C', name:'Chocolate'},
-    {hex:'#E8A090', name:'Salmon Pink'}, {hex:'#6B8E50', name:'Olive Green'}
-  ];
-  const coolColors = [
-    {hex:'#7B8FB5', name:'Steel Blue'}, {hex:'#9B7BB5', name:'Lavender'}, {hex:'#C4B5D4', name:'Mauve'},
-    {hex:'#5A8A7A', name:'Teal'}, {hex:'#B5C4D4', name:'Powder Blue'}
-  ];
-  const neutralColors = [
-    {hex:'#A8957A', name:'Warm Taupe'}, {hex:'#C4B5A5', name:'Nude'}, {hex:'#8A8070', name:'Greige'},
-    {hex:'#D4C4B5', name:'Ivory'}, {hex:'#6A7A6A', name:'Sage'}
-  ];
-  const colors = data.undertone === 'warm' ? warmColors : data.undertone === 'cool' ? coolColors : neutralColors;
-  const occasion = data.occasion || 'casual';
-  const outfitsByOccasion = {
-    wedding: [
-      {name:'Embroidered Anarkali Suit', icon:'👗', why:'Floor-length silhouettes add elegance and elongate the frame beautifully.'},
-      {name:'Silk Wrap Midi Dress', icon:'👘', why:'The wrap cut creates a customisable fit that works for your body proportions.'},
-      {name:'Lehenga with Cropped Blouse', icon:'💐', why:'A cropped blouse defines the waist while the flared skirt balances proportions.'},
-    ],
-    interview: [
-      {name:'Tailored Blazer & Trousers', icon:'💼', why:'Sharp tailoring signals confidence and professionalism in any workplace.'},
-      {name:'Midi Pencil Skirt & Blouse', icon:'👔', why:'Classic proportions that are polished without being overdressed.'},
-      {name:'Structured Shirt Dress', icon:'🏢', why:'A single-piece solution — effortlessly put together and highly versatile.'},
-    ],
-    party: [
-      {name:'Sequin Mini Dress', icon:'✨', why:'Light-catching fabric makes a statement under evening lighting.'},
-      {name:'Wide-Leg Jumpsuit', icon:'🥂', why:'Dressy yet comfortable — a modern take on occasion dressing.'},
-      {name:'Satin Slip Dress with Blazer', icon:'🎉', why:'The contrast of structured and fluid creates a fashion-forward look.'},
-    ],
-    casual: [
-      {name:'Linen Co-ord Set', icon:'☀️', why:'Effortless matching set that looks curated with minimal effort.'},
-      {name:'High-Waist Jeans & Tuck-In Top', icon:'👖', why:'Classic proportions that define your waist and elongate your legs.'},
-      {name:'Maxi Dress with Denim Jacket', icon:'🌸', why:'Relaxed yet put-together — perfect for any casual setting.'},
-    ],
-    date: [
-      {name:'Floral Wrap Dress', icon:'🌹', why:'Feminine silhouette that flatters and feels effortlessly romantic.'},
-      {name:'Silk Slip & Heel Mules', icon:'💕', why:'Simple elegance — the quiet luxury approach to date dressing.'},
-      {name:'Tailored Trousers & Fitted Top', icon:'🥀', why:'A sleek, sophisticated look that channels quiet confidence.'},
-    ],
-    formal: [
-      {name:'Floor-Length Gown', icon:'🎭', why:'Majestic and traditional — the quintessential formal look.'},
-      {name:'Structured Blazer Dress', icon:'🥂', why:'Modern formality — a power move for black-tie events.'},
-      {name:'Embellished Saree', icon:'💎', why:'Timeless Indian formal wear — always appropriate and utterly elegant.'},
-    ],
-  };
-  const outfits = outfitsByOccasion[occasion] || outfitsByOccasion.casual;
-
   return {
-    bodyType,
-    bodyTypeDesc: `You have a ${bodyType} body type — your proportions create a naturally ${bodyType === 'Hourglass' ? 'balanced and curvy' : bodyType === 'Pear' ? 'balanced lower body with narrower shoulders' : 'athletic and versatile'} silhouette.`,
-    stylePersona: `The ${data.comfort === 'bold' ? 'Statement Maker' : data.comfort === 'romantic' ? 'Romantic Dreamer' : data.styles?.includes('minimalist') ? 'Modern Minimalist' : 'Contemporary Classicist'}`,
-    outfits,
-    colors,
-    dos: [
-      'Define your waist with belts or tucked-in tops',
-      `Choose ${data.undertone === 'warm' ? 'warm, earthy' : data.undertone === 'cool' ? 'cool, jewel-toned' : 'versatile neutral'} colours`,
-      'Invest in well-fitting undergarments — they transform how clothes look',
-      'Embrace vertical lines to create length and elegance',
-    ],
-    donts: [
-      'Avoid shapeless, oversized pieces with no structure',
-      `Skip ${data.undertone === 'warm' ? 'icy blues and stark whites' : 'orange tones and mustard yellows'} near your face`,
-      'Avoid overly busy patterns that compete with your natural shape',
-      'Skip stiff fabrics that don\'t move with your body',
-    ],
-    stylingTips: [
-      `For the ${occasion}, pay attention to dress code subtleties — err on slightly more formal than necessary.`,
-      `Your ${data.undertone} skin undertone means you should gravitate towards ${data.undertone === 'warm' ? 'gold, bronze, and warm-toned metals' : data.undertone === 'cool' ? 'silver, platinum, and white gold' : 'either metal'} for jewellery.`,
-      `The ${data.time || 'afternoon'} light calls for ${data.time === 'evening' || data.time === 'night' ? 'deeper, richer tones and light-catching fabrics' : 'fresh, clear colours that photograph beautifully'}.`,
-    ],
-    occasionScore: occasion === 'formal' ? 95 : occasion === 'wedding' ? 90 : occasion === 'interview' ? 88 : 82,
-    occasionFeedback: `These recommendations are highly appropriate for your ${occasion} occasion, balancing style with context-sensitivity.`,
+    bodyType, bodyTypeDesc:`You have a ${bodyType} body type.`,
+    stylePersona:`The ${data.comfort==='bold'?'Statement Maker':data.comfort==='eclectic'?'Eclectic Explorer':'Contemporary Classicist'}`,
+    outfits: outfitMap[occ] || outfitMap.casual, colors,
+    dos:['Define your waist with belts or tucked-in tops',`Choose ${data.undertone==='warm'?'warm, earthy':'cool, jewel-toned'} colours`,'Invest in well-fitting undergarments','Embrace vertical lines to create length'],
+    donts:['Avoid shapeless, oversized pieces with no structure',`Skip ${data.undertone==='warm'?'icy blues and stark whites':'orange tones and mustard yellows'} near your face`,'Avoid overly busy patterns','Skip stiff fabrics that don\'t move with your body'],
+    stylingTips:[`For ${occ}, err slightly more formal than you think necessary.`,`Your ${data.undertone||'neutral'} undertone suits ${data.undertone==='warm'?'gold & bronze':'silver & platinum'} jewellery.`,`${data.time||'afternoon'} light calls for ${(data.time==='evening'||data.time==='night')?'richer, deeper tones':'fresh, clear colours'}.`],
+    occasionScore: occ==='formal'?95:occ==='wedding'?90:occ==='interview'?88:82,
+    occasionFeedback:`These recommendations are highly appropriate for your ${occ} occasion.`,
   };
 }
 
-// ===== RENDER RESULTS =====
+/* ============================================================
+   RENDER RESULTS
+   ============================================================ */
 function renderResults(r) {
   if (!r) return;
-  const container = document.getElementById('resultsContainer');
-  container.innerHTML = `
+  document.getElementById('resultsContainer').innerHTML = `
     <div class="result-container animate-in">
       <div class="result-hero">
         <div class="result-avatar-circle">✦</div>
@@ -943,103 +1324,66 @@ function renderResults(r) {
           <div class="result-intro-sub">Body Type: ${r.bodyType} — ${r.bodyTypeDesc}</div>
         </div>
       </div>
-
       <div class="result-grid">
         <div class="result-card">
           <div class="result-card-title">Recommended Outfits</div>
-          ${r.outfits.map(o => `
-            <div class="outfit-item">
-              <div class="outfit-icon">${o.icon}</div>
-              <div class="outfit-detail">
-                <div class="outfit-name">${o.name}</div>
-                <div class="outfit-why">${o.why}</div>
-              </div>
-            </div>
-          `).join('')}
+          ${r.outfits.map(o=>`<div class="outfit-item"><div class="outfit-icon">${o.icon}</div><div class="outfit-detail"><div class="outfit-name">${o.name}</div><div class="outfit-why">${o.why}</div></div></div>`).join('')}
         </div>
-
         <div class="result-card">
           <div class="result-card-title">Your Colour Palette</div>
           <div class="palette-row" style="margin-bottom:1rem;">
-            ${r.colors.map(c => `
-              <div title="${c.name}" class="palette-swatch" style="background:${c.hex};">
-                <span class="palette-swatch-label">${c.name.split(' ')[0]}</span>
-              </div>
-            `).join('')}
+            ${r.colors.map(c=>`<div title="${c.name}" class="palette-swatch" style="background:${c.hex};"><span class="palette-swatch-label">${c.name.split(' ')[0]}</span></div>`).join('')}
           </div>
-          <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;">These colours harmonise with your ${state.quizData.undertone || 'neutral'} undertone and will look vibrant against your complexion.</p>
-          
+          <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;">These colours harmonise with your ${state.quizData.undertone||'neutral'} undertone.</p>
           <div class="result-card-title" style="margin-top:1.25rem;">Styling Tips</div>
-          ${r.stylingTips.map(tip => `
-            <p style="font-size:0.82rem;color:var(--ink);line-height:1.65;margin-bottom:0.5rem;">• ${tip}</p>
-          `).join('')}
+          ${r.stylingTips.map(t=>`<p style="font-size:0.82rem;color:var(--ink);line-height:1.65;margin-bottom:0.5rem;">• ${t}</p>`).join('')}
         </div>
       </div>
-
       <div class="result-card" style="margin-bottom:1.25rem;">
         <div class="result-card-title">Do's & Don'ts for Your Shape</div>
         <div class="dos-donts">
           <div>
             <div style="font-size:0.75rem;font-weight:600;color:#4caf50;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">✓ What Works</div>
-            <ul class="dos-list">
-              ${r.dos.map(d => `<li>${d}</li>`).join('')}
-            </ul>
+            <ul class="dos-list">${r.dos.map(d=>`<li>${d}</li>`).join('')}</ul>
           </div>
           <div>
             <div style="font-size:0.75rem;font-weight:600;color:var(--rose);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">✗ What to Avoid</div>
-            <ul class="donts-list">
-              ${r.donts.map(d => `<li>${d}</li>`).join('')}
-            </ul>
+            <ul class="donts-list">${r.donts.map(d=>`<li>${d}</li>`).join('')}</ul>
           </div>
         </div>
       </div>
-
       <div class="result-card">
         <div class="result-card-title">Occasion Appropriateness</div>
         <div class="event-meter">
-          <div class="event-meter-label">
-            <span>Style Match</span>
-            <span style="font-weight:600;color:var(--rose);">${r.occasionScore}%</span>
-          </div>
-          <div class="event-meter-track">
-            <div class="event-meter-fill" id="occasionFill" style="width:0"></div>
-          </div>
+          <div class="event-meter-label"><span>Style Match</span><span style="font-weight:600;color:var(--rose);">${r.occasionScore}%</span></div>
+          <div class="event-meter-track"><div class="event-meter-fill" id="occasionFill" style="width:0"></div></div>
         </div>
         <p style="font-size:0.85rem;color:var(--ink);line-height:1.65;">${r.occasionFeedback}</p>
         <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
-          <button class="btn-primary" onclick="shareResults()" style="font-size:0.82rem;padding:0.65rem 1.5rem;">↗ Share Results</button>
-          <button onclick="initQuiz(); showProfileTab('quiz');" style="padding:0.65rem 1.5rem;border-radius:100px;border:1px solid var(--sand-dark);background:transparent;font-family:var(--font-body);font-size:0.82rem;color:var(--ink);cursor:pointer;">↺ Retake Quiz</button>
+          <button class="btn-primary" onclick="shareResults()" style="font-size:0.82rem;padding:0.65rem 1.5rem;">↺ Start Again</button>
+          <button onclick="initQuiz(false);showProfileTab('quiz');" style="padding:0.65rem 1.5rem;border-radius:100px;border:1px solid var(--sand-dark);background:transparent;font-family:var(--font-body);font-size:0.82rem;color:var(--ink);cursor:pointer;">↺ Retake Quiz</button>
         </div>
       </div>
-    </div>
-  `;
-
-  // Animate meter
-  setTimeout(() => {
-    const fill = document.getElementById('occasionFill');
-    if (fill) fill.style.width = r.occasionScore + '%';
-  }, 500);
+    </div>`;
+  setTimeout(() => { const f = document.getElementById('occasionFill'); if(f) f.style.width = r.occasionScore + '%'; }, 500);
 }
 
 function shareResults() {
-  if (navigator.share) {
-    navigator.share({ title: 'My VOGUE·AI Style Analysis', text: `I just got my personalised style analysis on VOGUE·AI! My style persona is: ${state.lastResults?.stylePersona}` });
-  } else {
-    navigator.clipboard?.writeText(`My VOGUE·AI style persona: ${state.lastResults?.stylePersona}`);
-    showToast('Results copied to clipboard!');
-  }
+  // Start the full quiz flow (6 questions) — replaces previous share behaviour
+  initQuiz(true);
+  showProfileTab('quiz');
 }
 
-// ===== NAVIGATION =====
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  const navEl = document.getElementById('nav-' + page);
-  if (navEl) navEl.classList.add('active');
+  document.getElementById('nav-' + page)?.classList.add('active');
   state.currentPage = page;
   window.scrollTo(0, 0);
-  // Close mobile nav
   document.getElementById('navLinks').classList.remove('open');
 }
 
@@ -1048,19 +1392,44 @@ function showProfileTab(tab) {
   document.querySelectorAll('.profile-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-
   if (tab === 'quiz') {
-    if (state.quizStep === 0 && !state.quizData.height) initQuiz();
+    // On first entry: check if we have a saved profile → short quiz
+    // isRetake is only true when button is clicked
+    if (currentStepPos === 0 && !state.quizData.occasion && !state.isRetake) initQuiz(false);
     else renderQuizStep();
   }
-  if (tab === 'results' && state.lastResults) {
-    renderResults(state.lastResults);
-  }
-  if (tab === 'saved') renderSavedOutfits();
+  if (tab === 'results' && state.lastResults) renderResults(state.lastResults);
+  if (tab === 'saved')     renderSavedOutfits();
   if (tab === 'moodboard') renderMoodboard();
+
+  // Update profile bio from saved profile (body type + undertone), keep signed-in user name if present
+  (function(){
+    const saved = JSON.parse(localStorage.getItem('userProfile') || 'null');
+    const bioEl = document.querySelector('.profile-bio');
+    const nameEl = document.getElementById('profileName');
+    const avatarEl = document.getElementById('profileAvatar');
+    function capitalize(s){ if(!s) return ''; return s.charAt(0).toUpperCase() + s.slice(1); }
+    if (saved) {
+      const bt = saved.bodyType ? capitalize(saved.bodyType.replace(/_/g,' ')) : 'Style Enthusiast';
+      const ud = saved.undertone ? capitalize(saved.undertone) : '';
+      bioEl.textContent = ud ? `${bt} • ${ud} undertone` : bt;
+      if (!currentUser) {
+        nameEl.textContent = bt;
+        avatarEl.textContent = (bt[0]||'S').toUpperCase();
+      }
+    } else {
+      bioEl.textContent = 'Building my perfect wardrobe ✨';
+      if (!currentUser) {
+        nameEl.textContent = 'Style Enthusiast';
+        avatarEl.textContent = 'S';
+      }
+    }
+  })();
 }
 
-// ===== THEME =====
+/* ============================================================
+   THEME & TOAST
+   ============================================================ */
 function toggleTheme() {
   state.theme = state.theme === 'light' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', state.theme);
@@ -1068,7 +1437,6 @@ function toggleTheme() {
   localStorage.setItem('vf_theme', state.theme);
 }
 
-// ===== TOAST =====
 function showToast(msg) {
   const toast = document.getElementById('toast');
   document.getElementById('toastMsg').textContent = msg;
@@ -1076,41 +1444,50 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// ===== INIT =====
+/* ============================================================
+   INIT
+   ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore theme
+  // Theme
   const savedTheme = localStorage.getItem('vf_theme') || 'light';
   state.theme = savedTheme;
   document.documentElement.setAttribute('data-theme', savedTheme);
   document.getElementById('themeToggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
-  // Mobile nav toggle
+  // Mobile nav
   document.getElementById('navToggle').addEventListener('click', () => {
     document.getElementById('navLinks').classList.toggle('open');
   });
 
-  // Restore saved items stats
-  document.getElementById('statSaved').textContent = state.savedItems.length;
+  // Auth — check if already logged in
+  if (currentUser) {
+    document.getElementById('authOverlay').classList.add('hidden');
+    applyUserToUI();
+  }
+
+  // Stats
+  document.getElementById('statSaved').textContent    = state.savedItems.length;
   document.getElementById('statMoodboard').textContent = state.moodboard.length;
 
-  // Render initial content
+  // Render
   renderHomeCards();
   renderNews();
-  initQuiz();
 
-  // Upload zone drag-and-drop
+  // Drag-and-drop mood board
   const zone = document.querySelector('.upload-zone');
   if (zone) {
     zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--rose)'; });
     zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.style.borderColor = '';
-      const dt = e.dataTransfer;
-      if (dt.files.length) handleMoodboardUpload({ target: dt });
-    });
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.style.borderColor = ''; if(e.dataTransfer.files.length) handleMoodboardUpload({target:e.dataTransfer}); });
   }
+
+  // Enter key support on auth inputs
+  ['siPassword','suPassword'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { id === 'siPassword' ? handleSignIn() : handleSignUp(); }
+    });
+  });
 });
 </script>
 </body>
