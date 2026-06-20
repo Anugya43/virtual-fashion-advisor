@@ -5,11 +5,13 @@ A complete, production-grade AI-powered fashion advisor web application.
 ## Features
 
 ### Pages & Features
-- **Home Dashboard** — Trending fashion grid with category filtering (Women's, Seasonal, Accessories, Footwear)
+- **Home Dashboard** — Trending fashion grid with category filtering (Women's, Seasonal, Accessories, Footwear etc)
 - **Fashion News** — Categorised articles (Trends, Styling Tips, Celebrity) with filtering
 - **User Profile** — Personal dashboard with stats, navigation, and all user data
 - **Mood Board** — Pinterest-style image upload board (drag & drop or file picker)
-- **Style Quiz** — 7-step intelligent personalization quiz
+- **Style Quiz** — 7-step intelligent personalization quiz, to determine your body type, undertone, style for the occasion
+- **Swipe Style**- Swipe through more than 14k+ style options for 6 different types of occasions curated for your body type
+- **Style Analytics** -Analyzes your styles, like and dislikes from style quiz
 - **AI Results** — Gemini-powered outfit recommendations, colour palette, do's/don'ts
 - **Save/Bookmark** — Heart any outfit to save it to your collection
 - **Dark Mode** — Full dark theme with localStorage persistence
@@ -64,44 +66,6 @@ app.get('/api/news', async (req, res) => {
 
 ---
 
-## Running the App
-
-This is a fully self-contained single HTML file. Just open it:
-
-```bash
-# Option 1: Direct browser open
-open index.html
-
-# Option 2: Simple HTTP server
-npx serve .
-# or
-python3 -m http.server 3000
-```
-
-For a production React version, the suggested folder structure would be:
-
-```
-src/
-├── pages/
-│   ├── Home.jsx
-│   ├── News.jsx
-│   └── Profile.jsx
-├── components/
-│   ├── FashionCard.jsx
-│   ├── NewsCard.jsx
-│   ├── MoodBoard.jsx
-│   ├── Quiz.jsx
-│   └── ResultsPanel.jsx
-├── services/
-│   ├── gemini.js       # AI API integration
-│   └── newsApi.js      # News API integration
-├── hooks/
-│   └── useLocalStorage.js
-└── App.jsx
-```
-
----
-
 ## Quiz Logic
 
 The quiz does NOT ask for body type directly. Instead it collects:
@@ -128,44 +92,10 @@ The AI infers body type from proportions and generates tailored advice.
 - **Fonts**: Playfair Display (display) + DM Sans (body) via Google Fonts
 - **AI**: Google Gemini Pro API
 - **News**: NewsAPI.org
-- **Storage**: localStorage (theme, saved items, mood board, quiz results)
+- **Storage**: localStorage(theme, saved items, mood board, quiz results), PostgresSQL(signup/login)
 
 ---
 
-## Customisation
-
-### Add Your Own Fashion Data
-
-Edit the `fashionItems` array in `index.html`:
-
-```javascript
-const fashionItems = [
-  {
-    id: 13,
-    cat: 'women',           // women | seasonal | accessories | footwear
-    badge: 'New',           // optional badge text
-    icon: '👗',             // emoji icon (placeholder for image)
-    category: 'Women\'s Fashion',
-    title: 'Your Item Title',
-    desc: 'Short description',
-    source: 'Source Name'
-  },
-  // ...
-];
-```
-
-### Replace Emoji Icons with Real Images
-
-Change the `fashion-card-img-inner` to an `<img>` tag:
-
-```html
-<!-- In renderHomeCards() -->
-<div class="fashion-card-img">
-  <img src="${item.imageUrl}" alt="${item.title}" style="width:100%;height:100%;object-fit:cover;" />
-</div>
-```
-
----
 Screenshots:
 
 <img width="1898" height="858" alt="image" src="https://github.com/user-attachments/assets/96fdc8fe-9015-4aab-b64a-177653f9a712" />
