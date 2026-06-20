@@ -78,18 +78,6 @@ npx serve .
 python3 -m http.server 3000
 ```
 
-No build step required.
-
----
-
-## Project Structure
-
-```
-virtual-fashion-advisor/
-├── index.html          # Complete app (all pages, styles, logic)
-└── README.md           # This file
-```
-
 For a production React version, the suggested folder structure would be:
 
 ```
@@ -178,6 +166,15 @@ Change the `fashion-card-img-inner` to an `<img>` tag:
 ```
 
 ---
+
+<img width="1898" height="858" alt="image" src="https://github.com/user-attachments/assets/96fdc8fe-9015-4aab-b64a-177653f9a712" />
+<img width="1911" height="867" alt="image" src="https://github.com/user-attachments/assets/e41152ec-c31e-4277-8361-b51e0fe06623" />
+<img width="1748" height="739" alt="image" src="https://github.com/user-attachments/assets/a31f3820-1fe3-4d20-b348-23b2b41d700c" />
+<img width="1846" height="854" alt="image" src="https://github.com/user-attachments/assets/f8eac765-a005-46c9-9968-4ff021e476d1" />
+<img width="1878" height="857" alt="image" src="https://github.com/user-attachments/assets/395d4460-ca51-48db-ba72-0fe7a4fb1e4f" />
+
+
+
 
 ## License
 
