@@ -65,6 +65,12 @@ app.get('/api/news', async (req, res) => {
 ```
 
 ---
+## To start/ run 
+```javascript
+npm install
+node server.js
+```
+Add your credentials of your database created in postgresSQL to save signup/login information
 
 ## Quiz Logic
 
@@ -96,7 +102,7 @@ The AI infers body type from proportions and generates tailored advice.
 
 ---
 
-Screenshots:
+## Screenshots:
 
 <img width="1898" height="858" alt="image" src="https://github.com/user-attachments/assets/96fdc8fe-9015-4aab-b64a-177653f9a712" />
 <img width="1911" height="867" alt="image" src="https://github.com/user-attachments/assets/e41152ec-c31e-4277-8361-b51e0fe06623" />
