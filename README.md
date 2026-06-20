@@ -166,6 +166,7 @@ Change the `fashion-card-img-inner` to an `<img>` tag:
 ```
 
 ---
+Screenshots:
 
 <img width="1898" height="858" alt="image" src="https://github.com/user-attachments/assets/96fdc8fe-9015-4aab-b64a-177653f9a712" />
 <img width="1911" height="867" alt="image" src="https://github.com/user-attachments/assets/e41152ec-c31e-4277-8361-b51e0fe06623" />
